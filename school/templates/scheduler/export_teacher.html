@@ -1,0 +1,32 @@
+{% extends 'scheduler/base.html' %}
+
+{% block title %}Schedule Export for Teachers{% endblock %}
+{% block content %}
+<h2>Schedule Export for Teachers</h2>
+
+<form method="get" action="{% url 'export_schedule_teacher' %}" class="mt-3">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="teacher" class="form-label">Select Teacher</label>
+            <select class="form-select" id="teacher" name="teacher" required>
+                <option value="">---</option>
+                {% for teacher in teachers %}
+                    <option value="{{ teacher.id }}">{{ teacher.get_full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <label for="weekday" class="form-label">Weekday (Mon–Fri)</label>
+            <select class="form-select" id="weekday" name="weekday">
+                <option value="">All days</option>
+                {% for value, label in weekdays %}
+                    <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Download Excel</button>
+</form>
+{% endblock %}

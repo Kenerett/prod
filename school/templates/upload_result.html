@@ -1,0 +1,32 @@
+<!-- school/templates/upload_result.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Результат импорта</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h2>Результат импорта данных</h2>
+    
+    {% if status == 'completed' %}
+        <div style="color: green; margin-bottom: 20px;">
+            <strong>Импорт успешно завершен!</strong>
+        </div>
+    {% elif status == 'error' %}
+        <div style="color: red; margin-bottom: 20px;">
+            <strong>Ошибка при импорте данных</strong>
+        </div>
+    {% endif %}
+    
+    <div style="background-color: #f5f5f5; padding: 15px; border: 1px solid #ddd;">
+        <h3>Вывод процесса:</h3>
+        <pre style="white-space: pre-wrap; font-family: monospace; font-size: 12px; max-height: 500px; overflow-y: auto;">{{ output }}</pre>
+    </div>
+    
+    <div style="margin-top: 20px;">
+        <a href="{% url 'upload_excel' %}" style="padding: 10px 15px; background-color: #007cba; color: white; text-decoration: none;">
+            Загрузить другой файл
+        </a>
+    </div>
+</body>
+</html>

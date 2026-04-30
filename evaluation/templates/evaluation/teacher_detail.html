@@ -1,0 +1,136 @@
+{% extends 'school/base.html' %}
+
+{% block title %}Analytics: {{ teacher.get_full_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'evaluation:analytics_dashboard' %}">Analytics</a></li>
+            <li class="breadcrumb-item active">{{ teacher.get_full_name }}</li>
+        </ol>
+    </nav>
+    
+    <h2>Analytics: {{ teacher.get_full_name }}</h2>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Overall Statistics</h5>
+                    <p><strong>Average Rating:</strong> {{ avg_rating|floatformat:2 }}/10</p>
+                    <p><strong>Total Evaluations:</strong> {{ total_evaluations }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Comments</h5>
+                    <p class="display-4">{{ comments.count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if subject_stats %}
+    <h3 class="mt-4">By Subjects</h3>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Subject</th>
+                    <th>Average Rating</th>
+                    <th>Number of Evaluations</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in subject_stats %}
+                <tr>
+                    <td>{{ stat.teacher_assignment__subject__name }}</td>
+                    <td>{{ stat.avg_rating|floatformat:2 }}</td>
+                    <td>{{ stat.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    {% if semester_stats %}
+    <h3 class="mt-4">By Semesters</h3>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Semester</th>
+                    <th>Average Rating</th>
+                    <th>Number of Evaluations</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in semester_stats %}
+                <tr>
+                    <td>{{ stat.teacher_assignment__semester__name }}</td>
+                    <td>{{ stat.avg_rating|floatformat:2 }}</td>
+                    <td>{{ stat.count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    {% if comments %}
+    <h3 class="mt-4">Student Comments</h3>
+    <div class="row">
+        {% for comment in comments %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">{{ comment.teacher_assignment.subject.name }}</h6>
+                    <p class="card-text">{{ comment.comment }}</p>
+                    <small class="text-muted">
+                        {{ comment.student.user.first_name }} {{ comment.student.user.last_name }} 
+                        - {{ comment.created_at|date:"d.m.Y H:i" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <h3 class="mt-4">All Evaluations</h3>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Subject</th>
+                    <th>Semester</th>
+                    <th>Rating</th>
+                    <th>Comment</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for eval in evaluations %}
+                <tr>
+                    <td>{{ eval.student.user.first_name }} {{ eval.student.user.last_name }}</td>
+                    <td>{{ eval.teacher_assignment.subject.name }}</td>
+                    <td>{{ eval.teacher_assignment.semester.name }}</td>
+                    <td>{{ eval.rating }}/10</td>
+                    <td>{{ eval.comment|default:"-" }}</td>
+                    <td>{{ eval.created_at|date:"d.m.Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center">No data</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

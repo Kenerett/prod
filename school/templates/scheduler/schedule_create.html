@@ -1,0 +1,158 @@
+{% extends 'scheduler/base.html' %}
+
+{% block title %}Create Schedule{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Create Schedule</h2>
+        <div>
+            <button type="button" class="btn btn-outline-warning me-2" onclick="clearAllFields()">
+                <i class="bi bi-x-circle"></i> Clear All
+            </button>
+            <button type="submit" class="btn btn-success" form="schedule-form">
+                <i class="bi bi-save"></i> Save Schedule
+            </button>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" id="schedule-form">
+        {% csrf_token %}
+        
+        <!-- Top Week Section -->
+        <div class="card mb-5">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-calendar-week"></i> Top Week</h4>
+            </div>
+            <div class="card-body">
+                {% include 'scheduler/schedule_week_table.html' with week_type='top' %}
+            </div>
+        </div>
+
+        <!-- Bottom Week Section -->
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="bi bi-calendar-week"></i> Bottom Week</h4>
+            </div>
+            <div class="card-body">
+                {% include 'scheduler/schedule_week_table.html' with week_type='bottom' %}
+            </div>
+        </div>
+
+        <div class="mt-4 text-center">
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="bi bi-save"></i> Save Schedule
+            </button>
+            <a href="{% url 'scheduler_dashboard' %}" class="btn btn-secondary btn-lg ms-2">
+                <i class="bi bi-arrow-left"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+.time-column {
+    width: 100px;
+    background-color: #f8f9fa;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.entries-container {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.entry-section {
+    margin-bottom: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.entry-section:nth-child(odd) {
+    background-color: #f8f9fa;
+}
+
+.entry-section:nth-child(even) {
+    background-color: #ffffff;
+}
+
+.schedule-cell {
+    min-width: 200px;
+    min-height: 200px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.schedule-cell:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.schedule-cell.filled {
+    background-color: #fff3cd !important;
+    border-left: 3px solid #ffc107 !important;
+}
+
+.form-select-sm {
+    font-size: 0.8rem !important;
+    padding: 0.2rem 0.4rem !important;
+}
+
+.day-header {
+    background-color: #e9ecef;
+    font-weight: bold;
+    text-align: center;
+}
+
+
+
+
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Schedule creation page loaded');
+    
+    // Функция для проверки, заполнена ли ячейка
+    function checkCellFilled(cell) {
+        const selects = cell.querySelectorAll('select');
+        const isFilled = Array.from(selects).some(select => select.value !== '');
+        if (isFilled) {
+            cell.classList.add('filled');
+        } else {
+            cell.classList.remove('filled');
+        }
+    }
+    
+    // Функция для очистки всех полей
+    window.clearAllFields = function() {
+        if (confirm('Вы уверены, что хотите очистить все поля расписания?')) {
+            document.querySelectorAll('select').forEach(select => {
+                select.value = '';
+                checkCellFilled(select.closest('.schedule-cell'));
+            });
+        }
+    };
+    
+    // Инициализация подсветки заполненных ячеек
+    document.querySelectorAll('.schedule-cell').forEach(cell => {
+        checkCellFilled(cell);
+        
+        // Добавляем обработчики событий для отслеживания изменений
+        cell.querySelectorAll('select').forEach(select => {
+            select.addEventListener('change', function() {
+                checkCellFilled(cell);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

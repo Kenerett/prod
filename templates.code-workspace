@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "templates",
+			"path": "../../STMS-STMSv1/templates"
+		},
+		{
+			"name": "STMS_PR",
+			"path": "."
+		}
+	],
+	"settings": {}
+}

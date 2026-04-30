@@ -1,0 +1,181 @@
+{% extends 'scheduler/base.html' %}
+{% load dict_extras %}
+
+{% block title %}Edit Schedule{% endblock %}
+{% load dict_extras %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calendar-plus"></i> Edit Schedule</h2>
+        <div>
+            <button type="button" class="btn btn-outline-warning me-2" onclick="clearAllFields()">
+                <i class="bi bi-x-circle"></i> Clear All
+            </button>
+            <button type="submit" class="btn btn-success" form="schedule-form">
+                <i class="bi bi-save"></i> Save Schedule
+            </button>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" id="schedule-form">
+        {% csrf_token %}
+        
+        <!-- Top Week Section -->
+        <div class="card mb-5 shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-calendar-week"></i> Top Week</h4>
+                <small>Edit schedule for the first week of the cycle</small>
+            </div>
+            <div class="card-body">
+                {% include 'scheduler/schedule_week_table.html' with week_type='top' %}
+            </div>
+        </div>
+
+        <!-- Bottom Week Section -->
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0"><i class="bi bi-calendar-week"></i> Bottom Week</h4>
+                <small>Edit schedule for the second week of the cycle</small>
+            </div>
+            <div class="card-body">
+                {% include 'scheduler/schedule_week_table.html' with week_type='bottom' %}
+            </div>
+        </div>
+
+        <div class="mt-4 text-center">
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="bi bi-save"></i> Save Complete Schedule
+            </button>
+            <a href="{% url 'schedule_list' %}" class="btn btn-secondary btn-lg ms-2">
+                <i class="bi bi-arrow-left"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+.time-column {
+    width: 120px;
+    background-color: #f8f9fa;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.entries-container {
+    max-height: 350px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    padding: 5px;
+    border: 1px dashed #dee2e6;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+}
+
+.entry-section {
+    margin-bottom: 10px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+}
+
+.entry-section:nth-child(odd) {
+    background-color: #e9ecef;
+}
+
+.entry-section:nth-child(even) {
+    background-color: #ffffff;
+}
+
+.schedule-cell {
+    min-width: 220px;
+    min-height: 250px;
+    position: relative;
+    transition: all 0.2s ease;
+    background-color: #fff;
+}
+
+.schedule-cell:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    background-color: #f8f9fa;
+}
+
+.schedule-cell.filled {
+    background-color: #fff3cd !important;
+    border-left: 4px solid #ffc107 !important;
+}
+
+.form-select-sm {
+    font-size: 0.8rem !important;
+    padding: 0.2rem 0.4rem !important;
+    margin-bottom: 0.3rem;
+}
+
+.day-header {
+    background-color: #e9ecef;
+    font-weight: bold;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.form-label {
+    font-size: 0.75rem;
+    margin-bottom: 0.2rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.add-entry-btn {
+    width: 100%;
+    margin-top: 5px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Schedule edit page loaded');
+    
+    // Функция для проверки, заполнена ли ячейка
+    function checkCellFilled(cell) {
+        const selects = cell.querySelectorAll('select');
+        const isFilled = Array.from(selects).some(select => select.value !== '');
+        if (isFilled) {
+            cell.classList.add('filled');
+        } else {
+            cell.classList.remove('filled');
+        }
+    }
+    
+    // Функция для очистки всех полей
+    window.clearAllFields = function() {
+        if (confirm('Вы уверены, что хотите очистить все поля расписания?')) {
+            document.querySelectorAll('select').forEach(select => {
+                select.value = '';
+                checkCellFilled(select.closest('.schedule-cell'));
+            });
+        }
+    };
+    
+    // Инициализация подсветки заполненных ячеек
+    document.querySelectorAll('.schedule-cell').forEach(cell => {
+        checkCellFilled(cell);
+        
+        // Добавляем обработчики событий для отслеживания изменений
+        cell.querySelectorAll('select').forEach(select => {
+            select.addEventListener('change', function() {
+                checkCellFilled(cell);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

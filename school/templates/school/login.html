@@ -1,0 +1,46 @@
+{% extends "school/base.html" %}
+{% block title %}login{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+<h2 class="mb-4">login</h2>
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert alert-{{ message.tags }}" role="alert">{{ message }}</div>
+{% endfor %}
+{% endif %}
+
+<form method="post">
+{% csrf_token %}
+{% if next %}
+<input type="hidden" name="next" value="{{ next }}">
+{% endif %}
+<div class="mb-3">
+<label for="username" class="form-label">Username:</label>
+<input type="text" class="form-control" id="username" name="username" value="{{ username|default:'' }}" required>
+</div>
+<div class="mb-3">
+<label for="password" class="form-label">Password:</label>
+<input type="password" class="form-control" id="password" name="password" required>
+</div>
+<button type="submit" class="btn btn-primary">login</button>
+<a href="{% url 'password_reset' %}" class="btn btn-link">Forgot password?</a>
+</form>
+
+<div class="mt-5 p-4 bg-light border rounded">
+<h5>Disclaimer</h5>
+<p>This website was created primarily for students, as well as for teachers and tutors, to make the learning process and interaction more convenient and effective. We trust every user and expect responsible use of the system.</p>
+<p>However, it is important to remember that any attempts of hacking, interference, or unauthorized access will be considered a violation of the laws of the Republic of Azerbaijan and will have serious consequences.</p>
+<p>In particular:</p>
+<ul>
+<li><strong>Article 271.</strong> Unauthorized access to a computer system — fine from 2000 to 4000 AZN or imprisonment for up to 2 years.</li>
+<li><strong>Article 272.</strong> Unauthorized acquisition of computer information — fine from 2000 to 4000 AZN or imprisonment for up to 2 years.</li>
+<li><strong>Article 273.</strong> Unauthorized interference with a computer system or information — fine from 2000 to 4000 AZN or imprisonment for up to 2 years.</li>
+<li><strong>Article 273-2.</strong> Falsification of computer data — fine from 2000 to 4000 AZN or imprisonment for up to 2 years.</li>
+</ul>
+<p>In addition, in the event of such violations or even attempts to commit them, the student will be expelled from the university.</p>
+<p class="mb-0"><strong>This system was created for your benefit — please use it only as intended.</strong></p>
+</div></div>
+{% endblock %}

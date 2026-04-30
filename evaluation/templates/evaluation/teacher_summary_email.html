@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Summary of Student Evaluation Results</title>
+</head>
+<body>
+    <h2>Summary of Student Evaluation Results</h2>
+    
+    <p>Dear {{ teacher.get_full_name }},</p>
+    
+    <p>Below are the summary results of the student evaluations:</p>
+    
+    {% if avg_rating %}
+    <h3>Overall Statistics</h3>
+    <p><strong>Average Score:</strong> {{ avg_rating|floatformat:2 }}/10</p>
+    <p><strong>Total Evaluations:</strong> {{ total_evaluations }}</p>
+    {% endif %}
+    
+    {% if subject_stats %}
+    <h3>By Subjects</h3>
+    <table border="1" cellpadding="5" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Number of Evaluations</th>
+                <th>Average Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for stat in subject_stats %}
+            <tr>
+                <td>{{ stat.teacher_assignment__subject__name }}</td>
+                <td>{{ stat.count }}</td>
+                <td>{{ stat.avg_rating|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    
+    {% if comments %}
+    <h3>Student Comments</h3>
+    <ul>
+        {% for comment in comments %}
+        <li><strong>{{ comment.teacher_assignment.subject.name }}:</strong> {{ comment.comment }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    
+    <p>Sincerely,<br>
+    Teacher Evaluation System</p>
+</body>
+</html>

@@ -1,0 +1,190 @@
+{% extends 'scheduler/base.html' %}
+
+{% block title %}Schedule{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-calendar-list"></i> Schedule</h2>
+    <div class="btn-group" role="group">
+        <a href="{% url 'schedule_edit' %}" class="btn btn-warning">
+            <i class="bi bi-pencil-square"></i> Edit All Schedule
+        </a>
+        <a href="{% url 'schedule_create' %}" class="btn btn-success">
+            <i class="bi bi-plus-lg"></i> Create New Schedule
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+    </div>
+    <div class="card-body">
+        <form method="get">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="group" class="form-label">Group</label>
+                    <select class="form-select" id="group" name="group">
+                        <option value="">All Groups</option>
+                        {% for group in groups %}
+                            <option value="{{ group.id }}" {% if group_filter|add:"0" == group.id %}selected{% endif %}>{{ group.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="teacher" class="form-label">Teacher</label>
+                    <select class="form-select" id="teacher" name="teacher">
+                        <option value="">All Teachers</option>
+                        {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}" {% if teacher_filter|add:"0" == teacher.id %}selected{% endif %}>{{ teacher.get_full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="subject" class="form-label">Subject</label>
+                    <select class="form-select" id="subject" name="subject">
+                        <option value="">All Subjects</option>
+                        {% for subject in subjects %}
+                            <option value="{{ subject.id }}" {% if subject_filter|add:"0" == subject.id %}selected{% endif %}>{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel"></i> Apply
+                    </button>
+                    <a href="{% url 'schedule_list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Reset
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if entries %}
+    <!-- Top Week Schedule -->
+    <div class="card mb-5">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-calendar-week"></i> Top Week Schedule</h4>
+            <span class="badge bg-light text-dark">{{ entries|length }} entries</span>
+        </div>
+        <div class="card-body">
+            {% include 'scheduler/schedule_display_table.html' with week_type='top' entries=entries %}
+        </div>
+    </div>
+
+    <!-- Bottom Week Schedule -->
+    <div class="card">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-calendar-week"></i> Bottom Week Schedule</h4>
+            <span class="badge bg-light text-dark">{{ entries|length }} entries</span>
+        </div>
+        <div class="card-body">
+            {% include 'scheduler/schedule_display_table.html' with week_type='bottom' entries=entries %}
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-info text-center">
+        <i class="bi bi-calendar-x fs-1 mb-3 d-block"></i>
+        <h5>No schedule entries found</h5>
+        <p class="mb-0">
+            <a href="{% url 'schedule_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create Schedule
+            </a>
+        </p>
+    </div>
+{% endif %}
+
+<style>
+.schedule-table {
+    font-size: 0.85rem;
+}
+
+.time-slot {
+    text-align: center;
+    vertical-align: middle;
+    background-color: #f8f9fa !important;
+    font-weight: bold;
+}
+
+.schedule-cell {
+    min-height: 100px;
+    vertical-align: top;
+    position: relative;
+    padding: 8px;
+    background-color: #fff;
+}
+
+.schedule-cell:hover {
+    background-color: #f8f9fa;
+}
+
+.schedule-entry {
+    background-color: white;
+    transition: all 0.2s ease;
+    position: relative;
+    margin-bottom: 8px;
+    border-left: 3px solid #0d6efd;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.schedule-entry.top-week {
+    border-left-color: #0d6efd;
+}
+
+.schedule-entry.bottom-week {
+    border-left-color: #0dcaf0;
+}
+
+.schedule-entry:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.schedule-entry .fw-bold {
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.schedule-entry .small {
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+.entry-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.schedule-entry:hover .entry-actions {
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
+    .schedule-table {
+        font-size: 0.7rem;
+    }
+    
+    .schedule-entry {
+        padding: 4px;
+        margin-bottom: 4px;
+    }
+    
+    .btn-sm {
+        padding: 0.1rem 0.3rem;
+        font-size: 0.7rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 5px;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends 'school/base.html' %}
+
+{% block title %}Teacher Evaluation Analytics{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Teacher Evaluation Analytics</h2>
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Evaluations</h5>
+                    <p class="card-text display-4">{{ total_evaluations }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Average Score</h5>
+                    <p class="card-text display-4">{{ avg_rating|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Data Export</h5>
+                    <a href="{% url 'evaluation:export_evaluations' %}?format=csv" class="btn btn-primary">Download CSV</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% if semester_stats %}
+    <h3 class="mt-4">By Semesters</h3>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Semester</th>
+                    <th>Average Score</th>
+                    <th>Number of Evaluations</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in semester_stats %}
+                <tr>
+                    <td>{{ stat.teacher_assignment__semester__name }}</td>
+                    <td>{{ stat.avg_rating|floatformat:2 }}</td>
+                    <td>{{ stat.total_evaluations }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    <h3 class="mt-4">Teacher Statistics</h3>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Teacher</th>
+                    <th>Average Score</th>
+                    <th>Number of Evaluations</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in teacher_stats %}
+                <tr>
+                    <td>{{ stat.teacher_assignment__teacher__first_name }} {{ stat.teacher_assignment__teacher__last_name }}</td>
+                    <td>{{ stat.avg_rating|floatformat:2 }}</td>
+                    <td>{{ stat.total_evaluations }}</td>
+                    <td>
+                        <a href="{% url 'evaluation:teacher_detail' stat.teacher_assignment__teacher__id %}" class="btn btn-sm btn-outline-primary">Details</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center">No data</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if top_comments %}
+    <h3 class="mt-4">Latest Comments</h3>
+    <div class="row">
+        {% for comment in top_comments %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        {{ comment.teacher_assignment__subject__name }} 
+                        ({{ comment.teacher_assignment__teacher__first_name }} {{ comment.teacher_assignment__teacher__last_name }})
+                    </h6>
+                    <p class="card-text">{{ comment.comment }}</p>
+                    <small class="text-muted">
+                        {{ comment.student__user__first_name }} {{ comment.student__user__last_name }} 
+                        - {{ comment.created_at|date:"d.m.Y H:i" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

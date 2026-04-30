@@ -1,0 +1,15 @@
+<!-- templates/tutor/create_student.html -->
+{% extends 'tutor/base.html' %} <!-- Use your base template for the tutor -->
+
+{% block title %}Create Student{% endblock %}
+
+{% block content %}
+<h2>Create New Student</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Create Student</button>
+    <a href="{% url 'tutor_dashboard' %}">Cancel</a> <!-- Replace with your URL -->
+</form>
+{% endblock %}

@@ -1,0 +1,52 @@
+<!-- templates/scheduler/schedule_display_table.html -->
+<div class="table-responsive">
+    <table class="table table-bordered schedule-table">
+        <thead class="table-light">
+            <tr>
+                <th class="time-column" style="width: 120px;">Time</th>
+                <th>Monday</th>
+                <th>Tuesday</th>
+                <th>Wednesday</th>
+                <th>Thursday</th>
+                <th>Friday</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for time_slot, time_label in time_slots %}
+                <tr>
+                    <td class="time-slot bg-light">{{ time_label }}</td>
+                    {% for day in "01234" %}
+                        <td class="schedule-cell">
+                            {% for entry in entries %}
+                                {% if entry.week_type == week_type and entry.weekday == day|add:"0" and entry.time_slot == time_slot %}
+                                    <div class="schedule-entry border rounded p-2 mb-2 
+                                                {% if entry.week_type == 'top' %}border-primary{% else %}border-info{% endif %}"
+                                         data-entry-id="{{ entry.id }}">
+                                        <div class="fw-bold">{{ entry.group.name }}</div>
+                                        <div class="small text-primary">{{ entry.subject.name }}</div>
+                                        <div class="small text-muted">{{ entry.teacher.get_full_name }}</div>
+                                        <div class="small">
+                                            <i class="bi bi-geo-alt"></i> {{ entry.room.name }}
+                                        </div>
+                                        <div class="entry-actions mt-2">
+                                            <a href="{% url 'schedule_update' entry.id %}" 
+                                               class="btn btn-sm btn-outline-primary me-1"
+                                               title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'schedule_delete' entry.id %}" 
+                                               class="btn btn-sm btn-outline-danger"
+                                               title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

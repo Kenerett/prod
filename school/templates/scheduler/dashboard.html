@@ -1,0 +1,64 @@
+<!-- templates/scheduler/dashboard.html -->
+{% extends 'scheduler/base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <!-- Welcome block -->
+    <div class="p-5 mb-4 bg-primary text-white rounded-3 shadow">
+        <div class="container-fluid py-3">
+            <h1 class="display-6 fw-bold">Welcome, {{ user.get_full_name }}!</h1>
+            <p class="fs-5 mt-3">
+                You are now in the Schedule Management System designed for students and teachers.  
+                Here you can fully manage the process of creating, editing, and exporting schedules.  
+                The system was built to make your work easier and eliminate the need to manually create schedules on paper or in separate files.  
+            </p>
+        </div>
+    </div>
+
+    <!-- Description of features -->
+    <div class="bg-light p-4 rounded shadow-sm">
+        <h3 class="mb-3">What you can do here:</h3>
+        <p class="fs-6">
+            • <b>Create schedules</b> — add groups, teachers, courses, classrooms, and class times.  
+            The system organizes everything and generates a clear schedule automatically.  
+        </p>
+        <p class="fs-6">
+            • <b>Edit schedules</b> — make changes at any time: reschedule classes, change teachers or rooms,  
+            add new subjects or remove unnecessary ones.  
+        </p>
+        <p class="fs-6">
+            • <b>Export schedules</b> — save the final schedule in Excel or PDF format to easily share it  
+            with teachers and students. Perfect for printing or emailing.  
+        </p>
+    </div>
+
+    <!-- Additional info -->
+    <div class="mt-5">
+        <h3 class="mb-3">Why is this useful?</h3>
+        <p class="fs-6">
+            With this system, you save time and reduce the chance of mistakes.  
+            No more manual conflict checking or overlapping schedules — the system does it automatically.  
+            Teachers always have updated information about their classes, and students can quickly access the latest schedule for the week.  
+        </p>
+        <p class="fs-6">
+            The system is also flexible: it can be used for different faculties, groups, and courses.  
+            You can manage multiple schedules, keep them up to date, and even store a history of changes.  
+        </p>
+    </div>
+
+    <!-- Tips -->
+    <div class="mt-5 mb-5">
+        <h3 class="mb-3">Tips for using the system:</h3>
+        <p class="fs-6">
+            • Always double-check the schedule before saving.  
+            • Update schedules regularly so teachers and students always see accurate information.  
+            • Use the export function to archive schedules in convenient formats.  
+            • If necessary, create separate schedules for different groups or courses.  
+        </p>
+    </div>
+
+</div>
+{% endblock %}

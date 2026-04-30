@@ -1,0 +1,70 @@
+{% extends "school/base.html" %}
+
+
+{% load i18n admin_urls static admin_list %}
+
+{% block object-tools-items %}
+    <!-- Кнопка импорта Excel -->
+    <li>
+        <a href="{% url 'admin:import_students_excel' %}" class="addlink" style="background: #28a745; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; margin-right: 10px;">
+            <svg width="16" height="16" style="margin-right: 5px;" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.781l2.116 2.54a.5.5 0 0 0 .768-.641L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.219l-2.116-2.54z"/>
+                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+            </svg>
+            📊 Импорт из Excel
+        </a>
+    </li>
+    
+    <!-- Кнопка скачивания шаблона -->
+    <li>
+        <a href="{% url 'admin:download_excel_template' %}" class="addlink" style="background: #17a2b8; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; display: inline-flex; align-items: center; margin-right: 10px;">
+            <svg width="16" height="16" style="margin-right: 5px;" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M8.5 1.5A1.5 1.5 0 0 1 10 3v1.5a.5.5 0 0 1-1 0V3a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v10a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-1.5a.5.5 0 0 1 1 0V13A1.5 1.5 0 0 1 8.5 14.5h-3A1.5 1.5 0 0 1 4 13V3A1.5 1.5 0 0 1 5.5 1.5h3z"/>
+                <path d="M8.146 8.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 9.207V12.5a.5.5 0 0 1-1 0V9.207l-1.646 1.647a.5.5 0 0 1-.708-.708l2-2z"/>
+            </svg>
+            📥 Скачать шаблон
+        </a>
+    </li>
+
+    {{ block.super }}
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    <style>
+        .addlink:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+            transition: all 0.2s ease;
+        }
+        
+        .object-tools {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .object-tools li {
+            margin: 0;
+        }
+        
+        /* Анимация для кнопок */
+        .addlink {
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .addlink:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        /* Адаптивность */
+        @media (max-width: 768px) {
+            .addlink {
+                padding: 6px 12px;
+                font-size: 14px;
+            }
+        }
+    </style>
+{% endblock %}

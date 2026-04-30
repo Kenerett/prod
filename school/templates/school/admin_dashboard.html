@@ -1,0 +1,148 @@
+{% extends 'school/base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <form method="get" class="flex-grow-1 me-3">
+    <input type="text" name="q" placeholder="Search students, teachers, groups..." value="{{ query }}" class="form-control" />
+  </form>
+  <a href="{% url 'evaluation:analytics_dashboard' %}" class="btn btn-success">
+    <i class="fas fa-chart-bar"></i> Teacher Evaluation Analytics
+  </a>
+</div>
+
+<!-- Students Accordion -->
+<div class="accordion mb-5" id="studentsAccordion">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="studentsHeading">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#studentsCollapse" aria-expanded="false" aria-controls="studentsCollapse">
+        👨‍🎓 Students
+      </button>
+    </h2>
+    <div id="studentsCollapse" class="accordion-collapse collapse" aria-labelledby="studentsHeading" data-bs-parent="#studentsAccordion">
+      <div class="accordion-body">
+        <div class="row row-cols-1 row-cols-md-2 g-3">
+          {% for student in students %}
+            <div class="col">
+              <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title">
+                    <a href="{% url 'student_detail' student.id %}" class="text-decoration-none">
+                      {{ student.user.last_name }} {{ student.user.first_name }}
+                    </a>
+                  </h5>
+                  <p class="card-text mb-0">
+                    <strong>Groups:</strong>
+                    {% if student.groups.exists %}
+                      {% for group in student.groups.all %}
+                        {{ group.name }}{% if not forloop.last %}, {% endif %}
+                      {% endfor %}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </p>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <p class="text-muted">No students found</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Teachers Accordion -->
+<div class="accordion mb-5" id="teachersAccordion">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="teachersHeading">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#teachersCollapse" aria-expanded="false" aria-controls="teachersCollapse">
+        👨‍🏫 Teachers
+      </button>
+    </h2>
+    <div id="teachersCollapse" class="accordion-collapse collapse" aria-labelledby="teachersHeading" data-bs-parent="#teachersAccordion">
+      <div class="accordion-body">
+        {% for teacher in teachers %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ teacher.id }}">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ teacher.id }}" aria-expanded="false" aria-controls="collapse{{ teacher.id }}">
+                {{ teacher.last_name }} {{ teacher.first_name }}
+              </button>
+            </h2>
+            <div id="collapse{{ teacher.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ teacher.id }}" data-bs-parent="#teachersAccordion">
+              <div class="accordion-body">
+                <p class="mb-1">
+                  <strong>Subjects:</strong> 
+                  {% for assignment in teacher_assignments %}
+                    {% if assignment.teacher_id == teacher.id %}
+                      <span class="badge bg-primary me-1">{{ assignment.subject.name }}</span>
+                    {% endif %}
+                  {% empty %}
+                    <span class="text-muted">none</span>
+                  {% endfor %}
+                </p>
+                <p class="mb-0">
+                  <strong>Groups:</strong> 
+                  {% for assignment in teacher_assignments %}
+                    {% if assignment.teacher_id == teacher.id %}
+                      <span class="badge bg-secondary me-1">{{ assignment.group.name }}</span>
+                    {% endif %}
+                  {% empty %}
+                    <span class="text-muted">none</span>
+                  {% endfor %}
+                </p>
+                <a href="{% url 'teacher_detail' teacher.id %}" class="btn btn-outline-primary btn-sm mt-2">View Details</a>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="accordion-item">
+            <div class="accordion-body">
+              <p class="text-muted mb-0">No teachers found</p>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Groups Accordion -->
+<div class="accordion mb-5" id="groupsAccordion">
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="groupsHeading">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#groupsCollapse" aria-expanded="false" aria-controls="groupsCollapse">
+        🏫 Groups
+      </button>
+    </h2>
+    <div id="groupsCollapse" class="accordion-collapse collapse" aria-labelledby="groupsHeading" data-bs-parent="#groupsAccordion">
+      <div class="accordion-body">
+        {% for group in groups %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="groupHeading{{ group.id }}">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#groupCollapse{{ group.id }}" aria-expanded="false" aria-controls="groupCollapse{{ group.id }}">
+                {{ group.name }}
+              </button>
+            </h2>
+            <div id="groupCollapse{{ group.id }}" class="accordion-collapse collapse" aria-labelledby="groupHeading{{ group.id }}" data-bs-parent="#groupsAccordion">
+              <div class="accordion-body">
+                <a href="{% url 'group_detail' group.id %}" class="btn btn-outline-primary btn-sm">View Group</a>
+              </div>
+            </div>
+          </div>
+        {% empty %}
+          <div class="accordion-item">
+            <div class="accordion-body">
+              <p class="text-muted mb-0">No groups found</p>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

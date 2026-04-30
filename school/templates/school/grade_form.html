@@ -1,0 +1,631 @@
+{% extends 'school/base.html' %}
+{% load custom_filters %}
+{% load static %}
+{% load grade_extras %}
+{% block title %}
+    {% if setting_num_sg %}
+        Setting Number of Quizzes - {{ tsg.subject.name }} ({{ tsg.group.name }})
+    {% else %}
+        Grades and Attendance - {{ tsg.subject.name }} ({{ tsg.group.name }})
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">{{ tsg.subject.name }} - {{ tsg.group.name }}</h2>
+            {% if not setting_num_sg and tsg.num_sg is not none %}
+                <small class="text-white-50">Quizzes (SG): {{ tsg.num_sg }}</small>
+            {% endif %}
+        </div>
+
+        <div class="card-body">
+            
+            {% if setting_num_sg %}
+            <div class="mb-4 p-4 bg-warning rounded border border-warning">
+                <h4 class="mb-3">Set Number of Quizzes (SG)</h4>
+                <p class="mb-3">Please specify the fixed number of quizzes that will be used for this group and subject throughout the semester.</p>
+                <p class="mb-3"><strong>Important:</strong> The maximum total score for all quizzes is limited to 20.</p>
+                
+                <form method="post" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-md-6">
+                        <label for="num_sg" class="form-label">Number of Quizzes (SG):</label>
+                        <input type="number" class="form-control" id="num_sg" name="num_sg" min="0" max="20" value="5" required>
+                        <div class="form-text">Enter an integer from 0 to 20.</div>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check"></i> Set
+                        </button>
+                        <a href="{% url 'teacher_dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            {% else %}
+            
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Display admin limits -->
+            {% if midterm_limit is not none or final_limit is not none %}
+            <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+                <h5 class="alert-heading">Grade Limits Set by Administrator:</h5>
+                <ul class="mb-0">
+                    {% if midterm_limit is not none %}
+                        <li><strong>Midterm:</strong> maximum {{ midterm_limit }}</li>
+                    {% else %}
+                        <li><strong>Midterm:</strong> <span class="text-danger">editing forbidden</span></li>
+                    {% endif %}
+                    {% if final_limit is not none %}
+                        <li><strong>Final:</strong> maximum {{ final_limit }}</li>
+                    {% else %}
+                         <li><strong>Final:</strong> <span class="text-danger">editing forbidden</span></li>
+                    {% endif %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endif %}
+
+            <div class="mb-4 p-3 bg-light rounded border">
+                <h5 class="mb-3"><i class="fas fa-file-upload"></i> Upload Learning Material</h5>
+                <form method="post" enctype="multipart/form-data" class="row g-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="upload_material" value="1">
+                    <div class="col-md-5">
+                        <label for="material_title" class="form-label">Title:</label>
+                        <input type="text" name="material_title" id="material_title" class="form-control" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="material_file" class="form-label">File:</label>
+                        <input type="file" name="material_file" id="material_file" class="form-control" required>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="fas fa-upload"></i> Upload
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="mb-4">
+                <form method="post" enctype="multipart/form-data" id="gradesForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="common_date" class="form-label"><strong>Class Date:</strong></label>
+                        <input type="date" id="common_date" name="common_date" required class="form-control w-auto">
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th rowspan="2" class="align-middle">Student</th>
+                                    <th rowspan="2" class="align-middle">Activity<br>(0-5)</th>
+                                    {% for sg_key in sg_columns %}
+                                        <th class="text-center">{{ sg_key }}<br>(0-20)</th>
+                                    {% empty %}
+                                        <th class="text-center">SG<br>(None)</th>
+                                    {% endfor %}
+                                    <th rowspan="2" class="align-middle">Midterm<br>
+                                        {% if midterm_limit is not none %}
+                                            (0-{{ midterm_limit }})
+                                        {% else %}
+                                            (0-25)
+                                        {% endif %}
+                                    </th>
+                                    <th rowspan="2" class="align-middle">Final<br>
+                                        {% if final_limit is not none %}
+                                            (0-{{ final_limit }})
+                                        {% else %}
+                                            (0-50)
+                                        {% endif %}
+                                    </th>
+                                    <th rowspan="2" class="align-middle bg-info text-dark">SG Total<br>(≤20)</th>
+                                    <th class="text-center">Absences Today</th>
+                                    <th class="text-center">Total Absences</th>
+                                </tr>
+                            </thead>
+                            <tbody id="gradesTableBody">
+                            {% for student in students %}
+                                {% with student_grade=grades|get_item:student.id %}
+                                {% with student_attendance=attendance_history|filter_by_student:student.id|first %}
+                                <tr data-student-id="{{ student.id }}" class="student-row">
+                                    <td class="text-start fw-bold">
+                                        {{ student.user.last_name }}<br>
+                                        <span class="fw-normal">{{ student.user.first_name }}</span>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="1" min="0" max="5" 
+                                               name="activity_{{ student.id }}" 
+                                               value="{{ student_grade.activity|default_if_none:'' }}" 
+                                               class="form-control form-control-sm grade-input">
+                                    </td>
+                                    
+                                    {% for sg_key in sg_columns %}
+                                    <td>
+                                        {% comment %} Get SG value using enhanced filter {% endcomment %}
+                                        {% with sg_value=student_grade|get_sg_score:sg_key %}
+                                        <input type="number" step="0.1" min="0" max="20" 
+                                               name="sg_{{ sg_key }}_{{ student.id }}" 
+                                               value="{{ sg_value|default:'0' }}" 
+                                               class="form-control form-control-sm sg-input text-center" 
+                                               placeholder="{{ sg_key }}" 
+                                               data-sg-key="{{ sg_key }}">
+                                        {% endwith %}
+                                    </td>
+                                    {% empty %}
+                                        <td class="text-center text-muted">-</td>
+                                    {% endfor %}
+                                    
+                                    <td>
+                                        <input type="number" step="1" min="0" 
+                                               {% if midterm_limit is not none %}max="{{ midterm_limit }}"{% else %}max="25"{% endif %}
+                                               name="midterm_{{ student.id }}" 
+                                               value="{{ student_grade.midterm|default_if_none:'' }}" 
+                                               class="form-control form-control-sm grade-input"
+                                               {% if not midterm_editable %}readonly disabled style="background-color: #e9ecef;"{% endif %}>
+                                        {% if not midterm_editable and student_grade.midterm is not none %}
+                                            <small class="text-muted">Forbidden</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <input type="number" step="1" min="0"
+                                               {% if final_limit is not none %}max="{{ final_limit }}"{% else %}max="50"{% endif %}
+                                               name="final_{{ student.id }}" 
+                                               value="{{ student_grade.final|default_if_none:'' }}" 
+                                               class="form-control form-control-sm grade-input"
+                                               {% if not final_editable %}readonly disabled style="background-color: #e9ecef;"{% endif %}>
+                                        {% if not final_editable and student_grade.final is not none %}
+                                            <small class="text-muted">Forbidden</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="sg-total-cell text-muted text-center fw-bold bg-light">0.0</td>
+                                    <td class="text-center">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <!-- Field for entering today's absences -->
+                                            <input type="number" 
+                                                name="missed_lessons_{{ student.id }}" 
+                                                id="missed_lessons_{{ student.id }}"
+                                                class="form-control form-control-sm text-center mb-1" 
+                                                min="0" 
+                                                value="{% if student_attendance %}{{ student_attendance.missed_lessons }}{% else %}0{% endif %}"
+                                                style="max-width: 80px;">
+                                            <!-- Field for entering reason (optional) -->
+                                            <input type="text" 
+                                                name="reason_{{ student.id }}" 
+                                                id="reason_{{ student.id }}"
+                                                class="form-control form-control-sm" 
+                                                placeholder="Reason"
+                                                value="{% if student_attendance and student_attendance.missed_lessons > 0 %}{{ student_attendance.reason }}{% endif %}"
+                                                style="max-width: 120px; font-size: 0.75rem;">
+                                        </div>
+                                        <!-- Button to open modal with details -->
+                                        <button type="button" 
+                                                class="btn btn-outline-info btn-sm mt-1 show-attendance-details" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#attendanceDetailsModal"
+                                                data-student-id="{{ student.id }}"
+                                                data-student-name="{{ student.user.last_name }} {{ student.user.first_name }}">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                    </td>
+                                    <td class="text-center">
+                                        <!-- Total absences from history -->
+                                        {% if student_total_missed %}
+                                            {% with total_missed=student_total_missed|get_item:student.id %}
+                                                {{ total_missed|default:0 }}
+                                            {% endwith %}
+                                        {% else %}
+                                            <!-- Calculate total absences for this student -->
+                                            {% with student_attendance_records=attendance_history|filter_by_student:student.id %}
+                                                {{ student_attendance_records|sum_attribute:'missed_lessons' }}
+                                            {% endwith %}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endwith %}
+                                {% endwith %}
+                            {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <th colspan="2">Group Total:</th>
+                                    <td colspan="{{ sg_columns|length }}" class="text-center">SG: <span id="group-sg-total">0.0</span>/{{ students|length|mul:20.0 }}</td>
+                                    <td class="text-center">Midterm: <span id="group-midterm-total">0</span></td>
+                                    <td class="text-center">Final: <span id="group-final-total">0</span></td>
+                                    <td class="text-center fw-bold bg-info text-dark">Overall SG: <span id="group-sg-overall-total">0.0</span></td>
+                                    <th colspan="2"></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="submitBtn">
+                        <i class="fas fa-save"></i> Save All Changes
+                    </button>
+                    <a href="{% url 'teacher_dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                </form>
+            </div>
+
+
+            <!-- Add collapsed section with full attendance history -->
+            <div class="accordion mb-4" id="attendanceAccordion">
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="headingAttendanceHistory">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAttendanceHistory" aria-expanded="false" aria-controls="collapseAttendanceHistory">
+                    <i class="fas fa-history me-2"></i> Full Group Attendance History
+                  </button>
+                </h2>
+                <div id="collapseAttendanceHistory" class="accordion-collapse collapse" aria-labelledby="headingAttendanceHistory" data-bs-parent="#attendanceAccordion">
+                  <div class="accordion-body">
+                    {% if attendance_history %}
+                        <!-- Group history by students -->
+                        {% regroup attendance_history by student as student_attendance_list %}
+                        {% for student_attendance_group in student_attendance_list %}
+                            <h5 class="mt-3">{{ student_attendance_group.grouper.user.last_name }} {{ student_attendance_group.grouper.user.first_name }}</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Missed Lessons</th>
+                                            <th>Reason</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for record in student_attendance_group.list %}
+                                            <tr>
+                                                <td>{{ record.date|date:"d.m.Y" }}</td>
+                                                <td>{{ record.missed_lessons }}</td>
+                                                <td>{{ record.reason|default:"-" }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                        <!-- Student total -->
+                                        <tr class="table-secondary">
+                                            <th>Total:</th>
+                                            <td colspan="2">
+                                                {{ student_attendance_group.list|sum_attribute:'missed_lessons' }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No attendance records found.</p>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {% comment %} Grade and attendance change history - leave unchanged if implemented {% endcomment %}
+            {% if grade_history %}
+            <div class="mb-4 p-3 bg-info bg-opacity-10 rounded border">
+                <h5 class="mb-3"><i class="fas fa-history"></i> Grade Change History</h5>
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped align-middle">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>Student</th>
+                                <th>Change Date</th>
+                                <th>Fields</th>
+                                <th>Old Values</th>
+                                <th>New Values</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for record in grade_history|slice:":10" %}
+                            <tr>
+                                <td>{{ record.student.user.last_name }} {{ record.student.user.first_name|first }}.</td>
+                                <td>{{ record.changed_at|date:"d.m.Y H:i" }}</td>
+                                <td>
+                                    {% for field in record.changed_fields %}
+                                        <span class="badge bg-primary me-1">{{ field }}</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% for field, old_value in record.old_values.items %}
+                                        <small>{{ field }}: {{ old_value|default:"-" }}</small><br>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% for field, new_value in record.new_values.items %}
+                                        <small>{{ field }}: {{ new_value|default:"-" }}</small><br>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if grade_history|length > 10 %}
+                    <p class="text-muted">Showing last 10 records. Total records: {{ grade_history|length }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <div class="p-3 bg-light rounded border">
+                <h5 class="mb-3"><i class="fas fa-file-alt"></i> Learning Materials</h5>
+                {% if materials %}
+                    <ul class="list-group">
+                    {% for material in materials %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-file"></i>
+                                <a href="{{ material.file.url }}" target="_blank" class="ms-1">
+                                    {{ material.title }}
+                                </a>
+                                <br>
+                                <small class="text-muted">
+                                    Uploaded: {{ material.uploaded_at|date:"d.m.Y H:i" }}
+                                </small>
+                            </div>
+                        </li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted mb-0">No materials uploaded.</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<!-- Modal for student absence details -->
+<div class="modal fade" id="attendanceDetailsModal" tabindex="-1" aria-labelledby="attendanceDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="attendanceDetailsModalLabel">Absence History: <span id="modalStudentName"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="studentAttendanceHistory">
+            <p class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if not setting_num_sg %}
+<script>
+(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        const tableBody = document.getElementById('gradesTableBody');
+        const commonDateInput = document.getElementById('common_date');
+        const submitBtn = document.getElementById('submitBtn');
+
+        if (commonDateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            commonDateInput.value = today;
+        }
+
+        function updateSGTotals() {
+            let groupSGTotal = 0.0;
+            let groupMidtermTotal = 0;
+            let groupFinalTotal = 0;
+
+            document.querySelectorAll('tr.student-row').forEach(row => {
+                let studentSGTotal = 0.0;
+
+                row.querySelectorAll('.sg-input').forEach(input => {
+                    const val = parseFloat(input.value);
+                    if (!isNaN(val) && val >= 0) {
+                        studentSGTotal += val;
+                    }
+                });
+
+                const isOverLimit = studentSGTotal > 20.0;
+                const totalCell = row.querySelector('.sg-total-cell');
+                if (totalCell) {
+                    totalCell.textContent = studentSGTotal.toFixed(1);
+                    totalCell.className = `sg-total-cell text-center fw-bold ${isOverLimit ? 'text-danger bg-warning' : (studentSGTotal > 0 ? 'text-success bg-light' : 'text-muted bg-light')}`;
+                }
+
+                if (isOverLimit) {
+                    row.classList.add('table-warning');
+                } else {
+                    row.classList.remove('table-warning');
+                }
+
+                // Update group totals
+                groupSGTotal += studentSGTotal;
+                const midtermInput = row.querySelector('input[name^="midterm_"]');
+                const finalInput = row.querySelector('input[name^="final_"]');
+                if (midtermInput && midtermInput.value !== '') {
+                    const midtermVal = parseFloat(midtermInput.value);
+                    if (!isNaN(midtermVal)) groupMidtermTotal += midtermVal;
+                }
+                if (finalInput && finalInput.value !== '') {
+                    const finalVal = parseFloat(finalInput.value);
+                    if (!isNaN(finalVal)) groupFinalTotal += finalVal;
+                }
+            });
+
+            // Update footer totals
+            document.getElementById('group-sg-total').textContent = groupSGTotal.toFixed(1);
+            document.getElementById('group-midterm-total').textContent = groupMidtermTotal;
+            document.getElementById('group-final-total').textContent = groupFinalTotal;
+            document.getElementById('group-sg-overall-total').textContent = groupSGTotal.toFixed(1);
+        }
+
+        tableBody.addEventListener('input', function(e) {
+            if (e.target.classList.contains('sg-input') || 
+                e.target.name.startsWith('midterm_') || 
+                e.target.name.startsWith('final_') ||
+                e.target.name.startsWith('activity_')) {
+                updateSGTotals();
+            }
+        });
+
+        // Initialize on page load
+        updateSGTotals();
+
+        document.getElementById('gradesForm').addEventListener('submit', function(e) {
+             let isFormValid = true;
+             const errorMessages = [];
+             document.querySelectorAll('tr.student-row').forEach(row => {
+                const studentNameCell = row.querySelector('td.fw-bold');
+                const studentName = studentNameCell ? studentNameCell.textContent.trim().split('\n')[0] : 'Unknown student';
+                
+                // Check Activity limit (0-5)
+                const activityInput = row.querySelector('input[name^="activity_"]');
+                if (activityInput && activityInput.value !== '') {
+                    const activityVal = parseFloat(activityInput.value);
+                    if (!isNaN(activityVal) && (activityVal < 0 || activityVal > 5)) {
+                        isFormValid = false;
+                        row.classList.add('table-danger');
+                        errorMessages.push(`Activity for ${studentName} must be between 0 and 5`);
+                    }
+                }
+                
+                // Check Midterm limit (0-25)
+                const midtermInput = row.querySelector('input[name^="midterm_"]');
+                if (midtermInput && midtermInput.value !== '') {
+                    const midtermVal = parseFloat(midtermInput.value);
+                    const maxMidterm = {{ midterm_limit|default:25 }};
+                    if (!isNaN(midtermVal) && (midtermVal < 0 || midtermVal > maxMidterm)) {
+                        isFormValid = false;
+                        row.classList.add('table-danger');
+                        errorMessages.push(`Midterm for ${studentName} must be between 0 and ${maxMidterm}`);
+                    }
+                }
+                
+                // Check Final limit (0-50)
+                const finalInput = row.querySelector('input[name^="final_"]');
+                if (finalInput && finalInput.value !== '') {
+                    const finalVal = parseFloat(finalInput.value);
+                    const maxFinal = {{ final_limit|default:50 }};
+                    if (!isNaN(finalVal) && (finalVal < 0 || finalVal > maxFinal)) {
+                        isFormValid = false;
+                        row.classList.add('table-danger');
+                        errorMessages.push(`Final for ${studentName} must be between 0 and ${maxFinal}`);
+                    }
+                }
+                
+                // Check SG total limit (≤20)
+                let totalSG = 0.0;
+                row.querySelectorAll('.sg-input').forEach(input => {
+                    const val = parseFloat(input.value);
+                    if (!isNaN(val) && val >= 0) {
+                        totalSG += val;
+                    }
+                });
+                if (totalSG > 20.0) {
+                    isFormValid = false;
+                    row.classList.add('table-danger');
+                    errorMessages.push(`SG total for ${studentName} = ${totalSG.toFixed(1)} > 20`);
+                } else {
+                    row.classList.remove('table-danger');
+                }
+            });
+
+            if (!isFormValid) {
+                e.preventDefault();
+                alert('Errors detected:\n' + errorMessages.join('\n') + '\n\nPlease correct the values.');
+                const firstErrorRow = document.querySelector('tr.table-danger');
+                if (firstErrorRow) {
+                    firstErrorRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+
+        // Show warning if fields are disabled
+        const disabledFields = document.querySelectorAll('input[readonly][disabled]');
+        if (disabledFields.length > 0) {
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'alert alert-warning alert-dismissible fade show';
+            warningDiv.innerHTML = `
+                <strong>Warning!</strong> Editing some fields (Midterm/Final) is forbidden by administrator.
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            `;
+             const cardBody = document.querySelector('.card-body');
+             if (cardBody) {
+                  cardBody.insertBefore(warningDiv, cardBody.firstChild);
+             }
+        }
+
+        // Handler for "Details" absence button click
+        document.querySelectorAll('.show-attendance-details').forEach(button => {
+            button.addEventListener('click', function() {
+                const studentId = this.getAttribute('data-student-id');
+                const studentName = this.getAttribute('data-student-name');
+                
+                // Set student name in modal header
+                document.getElementById('modalStudentName').textContent = studentName;
+                
+                // Clear previous content
+                const historyContainer = document.getElementById('studentAttendanceHistory');
+                historyContainer.innerHTML = '<p class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</p>';
+                
+                // Create table in modal
+                let tableHtml = `
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Missed Lessons</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                // Look for records in already rendered "Full Attendance History" section
+                const accordionBody = document.querySelector('#collapseAttendanceHistory .accordion-body');
+                let foundRecords = false;
+                if (accordionBody) {
+                    // Find header with student name
+                    const studentHeaders = accordionBody.querySelectorAll('h5');
+                    studentHeaders.forEach(header => {
+                         if (header.textContent.trim() === studentName) {
+                             const table = header.nextElementSibling;
+                             if (table && table.tagName === 'DIV' && table.classList.contains('table-responsive')) {
+                                 tableHtml = table.outerHTML;
+                                 foundRecords = true;
+                             }
+                         }
+                    });
+                }
+                
+                if (!foundRecords) {
+                     tableHtml += `<tr><td colspan="3" class="text-center text-muted">No absence records found for this student.</td></tr>`;
+                }
+                
+                tableHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                historyContainer.innerHTML = tableHtml;
+            });
+        });
+
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

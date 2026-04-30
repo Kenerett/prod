@@ -1,0 +1,71 @@
+<!-- templates/admin/analytics.html -->
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Аналитика посещений{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; Аналитика посещений
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="module" style="margin-bottom: 30px;">
+    <h1 style="padding: 15px; margin: 0; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+        Аналитика посещений сайта
+    </h1>
+    <div style="padding: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+            <div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="margin: 0 0 10px 0; color: #28a745;">Сегодня</h3>
+                <div style="font-size: 2.5em; font-weight: bold; color: #28a745;">
+                    {{ visits_today }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.9em;">посещений</div>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="margin: 0 0 10px 0; color: #17a2b8;">Неделя</h3>
+                <div style="font-size: 2.5em; font-weight: bold; color: #17a2b8;">
+                    {{ visits_week }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.9em;">посещений</div>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="margin: 0 0 10px 0; color: #ffc107;">Месяц</h3>
+                <div style="font-size: 2.5em; font-weight: bold; color: #ffc107;">
+                    {{ visits_month }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.9em;">посещений</div>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="margin: 0 0 10px 0; color: #007bff;">Пользователи онлайн</h3>
+                <div style="font-size: 2.5em; font-weight: bold; color: #007bff;">
+                    {{ current_users }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.9em;">за 5 минут</div>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="margin: 0 0 10px 0; color: #fd7e14;">Гости онлайн</h3>
+                <div style="font-size: 2.5em; font-weight: bold; color: #fd7e14;">
+                    {{ current_guests }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.9em;">за 5 минут</div>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
+                <h3 style="margin: 0 0 10px 0; color: #6c757d;">Всего</h3>
+                <div style="font-size: 2.5em; font-weight: bold; color: #6c757d;">
+                    {{ total_visits }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.9em;">посещений</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

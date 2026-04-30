@@ -1,0 +1,112 @@
+<!-- templates/tutor/manage_group_students.html -->
+{% extends 'tutor/base.html' %}
+
+{% block title %}Manage Students in Group {{ group.name }}{% endblock %}
+
+{% block content %}
+<h2>Manage Students in Group: {{ group.name }}</h2>
+
+<div class="row">
+    <!-- Section: Students in group -->
+    <div class="col-md-6">
+        <h4>Students in Group</h4>
+        {% if students_in_group %}
+            <div class="mb-3">
+                <!-- Search form for students in group -->
+                <input type="text" id="searchInGroup" class="form-control form-control-sm" placeholder="Search in group...">
+            </div>
+            <ul class="list-group" id="inGroupList">
+            {% for student in students_in_group %}
+                <li class="list-group-item d-flex justify-content-between align-items-center student-item" data-name="{{ student.user.get_full_name|lower }}">
+                    <span class="student-name">{{ student.user.get_full_name }}</span>
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        <input type="hidden" name="action" value="remove">
+                        <button type="submit" class="btn btn-sm btn-danger" 
+                                onclick="return confirm('Are you sure you want to remove {{ student.user.get_full_name|escapejs }} from group {{ group.name|escapejs }}?')">
+                            Remove
+                        </button>
+                    </form>
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">There are no students in the group yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Section: Add student -->
+    <div class="col-md-6">
+        <h4>Add Student</h4>
+        {% if available_students %}
+            <div class="mb-3">
+                <!-- Search form for available students -->
+                <input type="text" id="searchAvailable" class="form-control form-control-sm" placeholder="Search available students...">
+            </div>
+            <ul class="list-group" id="availableList">
+            {% for student in available_students %}
+                <li class="list-group-item d-flex justify-content-between align-items-center student-item" data-name="{{ student.user.get_full_name|lower }}">
+                    <span class="student-name">{{ student.user.get_full_name }}</span>
+                    <form method="post" style="display:inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="student_id" value="{{ student.id }}">
+                        <input type="hidden" name="action" value="add">
+                        <button type="submit" class="btn btn-sm btn-primary">Add</button>
+                    </form>
+                </li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p class="text-muted">No available students to add to this group.</p>
+            <!-- Clarifying message -->
+            <p class="text-info small">
+                Students you can add must be created and not belong to any of your groups yet.
+            </p>
+        {% endif %}
+    </div>
+</div>
+
+<a href="{% url 'tutor_group_detail' group.id %}" class="btn btn-secondary mt-3">Back to Group Details</a>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Function to filter the list of students
+    function filterStudents(inputId, listId) {
+        const input = document.getElementById(inputId);
+        const filter = input.value.toLowerCase();
+        const list = document.getElementById(listId);
+        const items = list.getElementsByClassName('student-item');
+
+        for (let i = 0; i < items.length; i++) {
+            const nameElement = items[i].getElementsByClassName('student-name')[0];
+            const txtValue = nameElement.textContent || nameElement.innerText;
+            if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                items[i].style.display = "";
+            } else {
+                items[i].style.display = "none";
+            }
+        }
+    }
+
+    // Add event handlers after the DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Search in the list of students in the group
+        const searchInGroupInput = document.getElementById('searchInGroup');
+        if (searchInGroupInput) {
+            searchInGroupInput.addEventListener('keyup', function() {
+                filterStudents('searchInGroup', 'inGroupList');
+            });
+        }
+
+        // Search in the list of available students
+        const searchAvailableInput = document.getElementById('searchAvailable');
+        if (searchAvailableInput) {
+            searchAvailableInput.addEventListener('keyup', function() {
+                filterStudents('searchAvailable', 'availableList');
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'school/base.html' %}
+
+{% block title %}Доступ запрещён{% endblock %}
+
+{% block content %}
+  <div class="alert alert-danger mt-4" role="alert">
+    <h4 class="alert-heading">Доступ запрещён</h4>
+    <p>У вас нет прав на просмотр этой страницы.</p>
+    <hr>
+    <a href="{% url 'student_dashboard' %}" class="btn btn-primary">Вернуться на главную панель</a>
+  </div>
+{% endblock %}

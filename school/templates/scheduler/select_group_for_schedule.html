@@ -1,0 +1,37 @@
+<!-- templates/scheduler/select_group_for_schedule.html -->
+{% extends 'scheduler/base.html' %}
+
+{% block title %}Create Schedule{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Create Schedule</h2>
+
+    <a href="{% url 'scheduler_dashboard' %}" class="btn btn-secondary mb-3">Back</a>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <h4>Select a group to create schedule:</h4>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="group" class="form-label">Group</label>
+            <select class="form-select" id="group" name="group" required>
+                <option value="">-- Select Group --</option>
+                {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Edit Schedule</button>
+    </form>
+</div>
+{% endblock %}

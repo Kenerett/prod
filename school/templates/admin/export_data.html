@@ -1,0 +1,98 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<h1>{{ title }}</h1>
+
+<div class="module">
+    <h2>Создать новый экспорт</h2>
+    <form method="post" style="margin: 20px 0;">
+        {% csrf_token %}
+        <div class="form-row">
+            <div>
+                <input type="submit" value="Экспортировать все данные в Excel" class="default" style="margin-right: 10px;">
+                <p class="help">
+                    Создает Excel файл со всеми данными системы включая пользователей, 
+                    студентов, группы, предметы, оценки, посещаемость и расписание.
+                </p>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="module">
+    <h2>Существующие файлы резервных копий</h2>
+    
+    {% if backup_files %}
+    <div class="results">
+        <table id="result_list">
+            <thead>
+                <tr>
+                    <th scope="col">Имя файла</th>
+                    <th scope="col">Размер</th>
+                    <th scope="col">Дата изменения</th>
+                    <th scope="col">Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for file in backup_files %}
+                <tr class="{% cycle 'row1' 'row2' %}">
+                    <td>{{ file.name }}</td>
+                    <td>{{ file.size|filesizeformat }}</td>
+                    <td>{{ file.modified|date:"d.m.Y H:i:s" }}</td>
+                    <td>
+                        <a href="{{ MEDIA_URL }}backups/{{ file.name }}" download class="viewlink">
+                            Скачать
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>Файлы резервных копий не найдены.</p>
+    {% endif %}
+</div>
+
+<style>
+.module {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.module h2 {
+    background: #417690;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    margin: 0;
+    padding: 8px 16px;
+    text-transform: uppercase;
+}
+
+.form-row {
+    margin: 0;
+    padding: 8px 12px;
+}
+
+.help {
+    color: #666;
+    font-size: 11px;
+    margin-top: 2px;
+}
+</style>
+{% endblock %}

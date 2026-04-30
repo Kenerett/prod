@@ -1,0 +1,27 @@
+{% extends 'tutor/base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<h2>My Groups</h2>
+
+{% if groups %}
+    <div class="list-group">
+        {% for group in groups %}
+            <a href="{% url 'tutor_group_detail' group.id %}" class="list-group-item list-group-item-action">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1">{{ group.name }}</h5>
+                        <small>{{ group.students.count }} students</small>
+                    </div>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+            </a>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        You don't have any assigned groups yet.
+    </div>
+{% endif %}
+{% endblock %}

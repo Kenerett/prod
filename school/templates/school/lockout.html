@@ -1,0 +1,14 @@
+{% extends "school/base.html" %}
+{% block title %}Доступ заблокирован{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="alert alert-danger text-center">
+        <h2><i class="fas fa-exclamation-triangle"></i> Доступ временно заблокирован</h2>
+        <p>Слишком много неудачных попыток входа.</p>
+        <p>Ваш IP-адрес заблокирован на 1 час.</p>
+        <p>Пожалуйста, попробуйте снова позже.</p>
+        <a href="{% url 'login' %}" class="btn btn-primary">Попробовать снова</a>
+    </div>
+</div>
+{% endblock %}

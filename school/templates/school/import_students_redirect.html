@@ -1,0 +1,77 @@
+{% extends "school/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">{{ title|default:"Импорт студентов и оценок" }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5>📋 Инструкция по импорту</h5>
+                        <p>{{ description|default:"Для импорта студентов и их оценок из Excel файла используйте админ-панель." }}</p>
+                        
+                        <h6>Формат файла Excel:</h6>
+                        <ul>
+                            <li><strong>Первая колонка:</strong> Полные имена студентов (Фамилия Имя Отчество)</li>
+                            <li><strong>Остальные колонки:</strong> Оценки с названиями:
+                                <ul>
+                                    <li><code>midterm</code> - промежуточная оценка</li>
+                                    <li><code>activity</code> - активность</li>
+                                    <li><code>final</code> - итоговая оценка</li>
+                                    <li><code>total</code> - общий балл</li>
+                                    <li><code>SG1, SG2, SG3...</code> - оценки за квизы</li>
+                                </ul>
+                            </li>
+                            <li><strong>Пустые ячейки</strong> будут проигнорированы</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <a href="{% url 'download_excel_template' %}" class="btn btn-outline-success">
+                                📥 Скачать шаблон Excel
+                            </a>
+                        </div>
+                        
+                        <div>
+                            {% if admin_url %}
+                                <a href="{{ admin_url }}" class="btn btn-primary">
+                                    🚀 Перейти к импорту
+                                </a>
+                            {% else %}
+                                <a href="/admin/school/grade/import-excel/" class="btn btn-primary">
+                                    🚀 Перейти к импорту
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    
+                    <div class="alert alert-warning">
+                        <strong>⚠️ Важно:</strong>
+                        <ul class="mb-0">
+                            <li>Убедитесь, что названия колонок соответствуют требуемому формату</li>
+                            <li>Проверьте правильность написания имен студентов</li>
+                            <li>Используйте предварительный просмотр перед окончательным импортом</li>
+                            <li>Если группа не существует, она будет создана автоматически</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card-footer">
+                    <small class="text-muted">
+                        💡 Совет: Сначала используйте опцию "Только предварительный просмотр" 
+                        для проверки данных перед импортом.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

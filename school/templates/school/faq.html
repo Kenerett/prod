@@ -1,0 +1,152 @@
+{% extends "school/base.html" %}
+
+{% block title %}FAQ - Electronic Journal{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4 text-center">Frequently Asked Questions (FAQ) about the STMS</h1>
+
+    <div class="accordion" id="faqAccordion">
+        <!-- NEW Question 1 (added at the beginning) -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingOneNew">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOneNew" aria-expanded="true" aria-controls="collapseOneNew">
+                    1. Can a teacher change my grades?
+                </button>
+            </h2>
+            <div id="collapseOneNew" class="accordion-collapse collapse show" aria-labelledby="headingOneNew" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <p>Yes, a teacher can change grades an unlimited number of times, but only until the established deadline.</p>
+                    <p><strong>For example:</strong> if the Final exam starts on May 10th and the semester ends on May 25th, the teacher can make any changes to student grades during the period from May 10th to May 25th.</p>
+                    <p><strong>After the specified date, it will be impossible to change grades.</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 2 (was 1) -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingOne">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    2. What can I do in the system as a student?
+                </button>
+            </h2>
+            <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <p><strong>👉 In the electronic journal, students can:</strong></p>
+                    <ul>
+                        <li>view their grades;</li>
+                        <li>track absences and attendance;</li>
+                        <li>access educational materials uploaded by teachers;</li>
+                        <li>monitor overall progress in subjects.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 3 (was 2) -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingTwo">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                    3. What should teachers do?
+                </button>
+            </h2>
+            <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <p><strong>👉 Teachers are required to:</strong></p>
+                    <ul>
+                        <li>enter grades;</li>
+                        <li>record attendance and absences;</li>
+                        <li>upload educational materials for students.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 4 (was 3) -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingThree">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                    4. What are the system development plans?
+                </button>
+            </h2>
+            <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <p><strong>👉 In the near future, the following is planned:</strong></p>
+                    <ul>
+                        <li>adding notifications about new grades and materials;</li>
+                        <li>expanding analytics for students and teachers;</li>
+                        <li>simplifying feedback through the Support system.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 5 (was 4) -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingFour">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                    5. What is Support and what is it for?
+                </button>
+            </h2>
+            <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <p><strong>👉 Support is the system's helpdesk. There you can:</strong></p>
+                    <ul>
+                        <li><strong>for students</strong> — report incorrect grades, attendance errors, or issues with uploaded materials;</li>
+                        <li><strong>for teachers</strong> — contact regarding problems with entering grades, uploading materials, and other technical difficulties;</li>
+                        <li><strong>for all users</strong> — share ideas for system development, comments, and suggestions.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 6 (was 5) -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingFive">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+                    6. Where can I access the system?
+                </button>
+            </h2>
+            <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <p><strong>👉 The system is only accessible from within the territory of Azerbaijan.</strong></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Question 7 (was 6) -->
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingSix">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix" aria-expanded="false" aria-controls="collapseSix">
+                    7. On which devices does the system work?
+                </button>
+            </h2>
+            <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#faqAccordion">
+                <div class="accordion-body">
+                    <p><strong>👉 The electronic journal can be used on any device:</strong></p>
+                    <ul>
+                        <li>computer,</li>
+                        <li>laptop,</li>
+                        <li>tablet,</li>
+                        <li>smartphone.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Section "Didn't find an answer?" -->
+    <div class="mt-5 p-4 bg-light rounded">
+        <h4 class="mb-3">Didn't find an answer to your question?</h4>
+        <p>If you couldn't find the answer to your question, please contact our support team.</p>
+        <a href="https://t.me/baprogramssupportstms" target="_blank" class="btn btn-primary">
+            <svg class="me-2" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-telegram" viewBox="0 0 16 16">
+                <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.287 5.906c-.778.778-1.58 1.601-2.39 2.41-.81.81-1.601 1.58-2.41 2.39-.164.164-.164.428 0 .592.164.164.428.164.592 0 .81-.81 1.601-1.58 2.41-2.39.81-.81 1.58-1.601 2.39-2.41.164-.164.164-.428 0-.592-.164-.164-.428-.164-.592 0z"/>
+            </svg>
+            Write to Telegram
+        </a>
+    </div>
+
+</div>
+{% endblock %}

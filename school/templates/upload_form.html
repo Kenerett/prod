@@ -1,0 +1,45 @@
+<!-- school/templates/upload_form.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Загрузка Excel файла</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h2>Загрузка данных студентов из Excel</h2>
+    
+    {% if error %}
+        <div style="color: red; margin-bottom: 20px;">
+            <strong>Ошибка:</strong> {{ error }}
+        </div>
+    {% endif %}
+    
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="margin-bottom: 15px;">
+            <label><strong>Excel файл:</strong></label><br>
+            <input type="file" name="excel_file" accept=".xlsx,.xls" required>
+            <small>Поддерживаются форматы: .xlsx, .xls</small>
+        </div>
+        
+        <div style="margin-bottom: 15px;">
+            <label><strong>Название группы:</strong></label><br>
+            <input type="text" name="group_name" value="722.23E students" required style="width: 300px; padding: 5px;">
+        </div>
+        
+        <button type="submit" style="padding: 10px 20px; background-color: #007cba; color: white; border: none; cursor: pointer;">
+            Импортировать данные
+        </button>
+    </form>
+    
+    <div style="margin-top: 30px; padding: 15px; background-color: #f0f0f0;">
+        <h3>Инструкция:</h3>
+        <ol>
+            <li>Подготовьте Excel файл с данными студентов</li>
+            <li>Убедитесь, что структура файла соответствует требованиям</li>
+            <li>Выберите файл и укажите название группы</li>
+            <li>Нажмите кнопку "Импортировать данные"</li>
+        </ol>
+    </div>
+</body>
+</html>

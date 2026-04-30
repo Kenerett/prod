@@ -1,0 +1,201 @@
+<!-- school/templates/school/student_detail.html -->
+{% extends 'school/base.html' %}
+
+{% block title %}Student Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <style>
+    @media (max-width: 768px) {
+      .table {
+        font-size: 0.8rem;
+      }
+      
+      .table th,
+      .table td {
+        padding: 0.5rem;
+      }
+      
+      .card-body {
+        padding: 1rem;
+      }
+      
+      h2 {
+        font-size: 1.25rem;
+      }
+      
+      h5 {
+        font-size: 1rem;
+      }
+      
+      .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .container {
+        padding: 0.5rem;
+      }
+      
+      .card {
+        margin-bottom: 1rem;
+      }
+      
+      .table {
+        font-size: 0.7rem;
+      }
+      
+      .table th,
+      .table td {
+        padding: 0.4rem;
+      }
+      
+      .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      h2 {
+        font-size: 1.1rem;
+      }
+      
+      h5 {
+        font-size: 0.9rem;
+      }
+      
+      .card-header {
+        padding: 0.75rem 1rem;
+      }
+      
+      .list-unstyled {
+        font-size: 0.75rem;
+      }
+      
+      .list-unstyled li {
+        margin-bottom: 0.1rem;
+      }
+    }
+  </style>
+
+  <!-- Информация о студенте -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h2 class="card-title">🎓 {{ student.user.last_name }} {{ student.user.first_name }}</h2>
+      {% if student.groups.exists %}
+        <p class="text-muted mb-1"><strong>Groups:</strong> 
+          {% for group in student.groups.all %}
+            {{ group.name }}{% if not forloop.last %}, {% endif %}
+          {% endfor %}
+        </p>
+      {% endif %}
+      <p><strong>Overall GPA:</strong>
+        {% if gpa %}
+          <span class="text-success">{{ gpa|floatformat:2 }}</span>
+        {% else %}
+          <span class="text-muted">— no data</span>
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <!-- Оценки -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">📊 Grades</h5>
+    </div>
+    <div class="card-body p-0">
+      {% if grades_data %}
+        <div class="table-responsive">
+          <table class="table table-bordered mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Subject</th>
+                <th>Teacher</th>
+                <th>Group</th>
+                <th>Activity</th>
+                <th>SG Scores</th>
+                <th>SG Total</th>
+                <th>Midterm</th>
+                <th>Final</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for grade_item in grades_data %}
+                <tr>
+                  <td>{{ grade_item.grade_obj.teacher_assignment.subject.name }}</td>
+                  <td>
+                    <a href="{% url 'teacher_detail' grade_item.grade_obj.teacher_assignment.teacher.id %}">
+                      {{ grade_item.grade_obj.teacher_assignment.teacher.get_full_name }}
+                    </a>
+                  </td>
+                  <td>{{ grade_item.grade_obj.teacher_assignment.group.name }}</td>
+                  <td>{{ grade_item.activity|default:"–" }}</td>
+                  <td>
+                    {% if grade_item.sg_scores %}
+                      <ul class="list-unstyled mb-0">
+                        {% for sg_key, sg_value in grade_item.sg_scores.items %}
+                          <li>{{ sg_key }}: {{ sg_value }}</li>
+                        {% endfor %}
+                      </ul>
+                    {% else %}
+                      –
+                    {% endif %}
+                  </td>
+                  <td>{{ grade_item.sg_total|default:"–" }}</td>
+                  <td>{{ grade_item.midterm|default:"–" }}</td>
+                  <td>{{ grade_item.final|default:"–" }}</td>
+                  <td><strong>{{ grade_item.total|floatformat:2 }}</strong></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-3 text-muted">No grades</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Пропуски -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-warning text-dark">
+      <h5 class="mb-0">📅 Absences by Subject</h5>
+    </div>
+    <div class="card-body p-0">
+      {% if missed_lessons_by_subject %}
+        <div class="table-responsive">
+          <table class="table table-bordered mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Subject</th>
+                <th>Total Missed</th>
+                <th>Absence Dates</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for subject, data in missed_lessons_by_subject.items %}
+                <tr>
+                  <td>{{ subject }}</td>
+                  <td>{{ data.total }}</td>
+                  <td>
+                    {% for date in data.dates %}
+                      {{ date|date:"d M Y" }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="p-3 text-muted">No absences</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mt-3">← Back to Admin</a>
+</div>
+{% endblock %}

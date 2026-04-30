@@ -1,0 +1,182 @@
+<!-- templates/tutor/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{% block title %}Tutor Panel{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <style>
+        body {
+            position: relative;
+            min-height: 100vh;
+        }
+        
+        /* Фоновое изображение с затемнением */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('{% static "images/logo.png" %}');
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-size: auto;
+            opacity: 0.3; /* Прозрачность фона */
+            z-index: -1;
+        }
+        
+        /* Стили для центрирования футера */
+        .wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .content {
+            flex: 1;
+        }
+        
+        /* Делаем контент более читаемым */
+        main {
+            background-color: rgba(255, 255, 255, 0.9); /* Полупрозрачный белый фон */
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <!-- NAVBAR -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+            <div class="container-fluid">
+                <!-- Logo -->
+                <a class="navbar-brand d-flex align-items-center" href="{% url 'tutor_dashboard' %}">
+                    <img src="{% static 'images/logo.png' %}" alt="STMS Logo" 
+                         class="me-2" style="height:50px;">
+                    <span class="fw-bold">Tutor Panel</span>
+                </a>
+
+                <!-- Mobile toggle -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Menu -->
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <!-- Left -->
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'tutor_dashboard' %}">
+                                <i class="bi bi-house-door"></i> Home
+                            </a>
+                        </li>
+
+                        <!-- Create dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownCreate" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-plus-circle"></i> Create
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'tutor_create_student' %}">
+                                    <i class="bi bi-person-plus"></i> Student</a></li>
+                                <li><a class="dropdown-item" href="{% url 'tutor_create_group' %}">
+                                    <i class="bi bi-people"></i> Group</a></li>
+                            </ul>
+                        </li>
+
+                        <!-- Manage Groups dropdown -->
+                        {% if user.tutor_profile %}
+                            {% with user.tutor_profile.groups.all as tutor_groups %}
+                                {% if tutor_groups %}
+                                    <li class="nav-item dropdown">
+                                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownGroups" role="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-pencil-square"></i> Manage Groups
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            {% for group in tutor_groups %}
+                                                <li>
+                                                    <a class="dropdown-item" href="{% url 'tutor_manage_group_students' group.id %}">
+                                                        <i class="bi bi-people"></i> {{ group.name }}
+                                                    </a>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </li>
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                    </ul>
+
+                    <!-- Right -->
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <span class="navbar-text me-3">
+                                <i class="bi bi-person-circle"></i> Hi, {{ user.get_full_name }}
+                            </span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="{% url 'logout' %}">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <main class="container my-4 flex-grow-1 content">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {% if message.tags == 'danger' %}
+                            <i class="bi bi-exclamation-triangle"></i>
+                        {% elif message.tags == 'success' %}
+                            <i class="bi bi-check-circle"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="bi bi-exclamation-circle"></i>
+                        {% elif message.tags == 'info' %}
+                            <i class="bi bi-info-circle"></i>
+                        {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="bg-dark text-light py-4 mt-auto">
+            <div class="container">
+                <div class="row align-items-center">
+                    <!-- Left -->
+                    <div class="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                        <h5 class="fw-bold">Tutor Panel</h5>
+                        <p class="mb-0">
+                            A scheduling and management system for tutors, groups, and students.  
+                            Create, edit, and manage everything in one place.
+                        </p>
+                    </div>
+                    <!-- Right -->
+                    <div class="col-md-6 text-center text-md-end">
+                        <p class="mb-0">© {% now "Y" %} STMS. All rights reserved.</p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

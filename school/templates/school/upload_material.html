@@ -1,0 +1,25 @@
+<h2>Upload Materials: {{ tsg.group.name }} — {{ tsg.subject.name }}</h2>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Upload</button>
+</form>
+
+<h3>Uploaded Materials</h3>
+<ul>
+    {% for material in materials %}
+        <li>
+            {% if material.file %}
+                <a href="{{ material.file.url }}" target="_blank">{{ material.title }}</a>
+            {% else %}
+                {{ material.title }} <span class="text-muted">(file missing)</span>
+            {% endif %}
+            — {{ material.uploaded_at|date:"d.m.Y H:i" }}
+        </li>
+    {% empty %}
+        <li>No materials available</li>
+    {% endfor %}
+</ul>
+
+<a href="{% url 'teacher_dashboard' %}">Back</a>

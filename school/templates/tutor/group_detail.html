@@ -1,0 +1,178 @@
+<!-- templates/tutor/group_detail.html -->
+{% extends 'tutor/base.html' %}
+
+{% block title %}Group {{ group.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'tutor_dashboard' %}">My Groups</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ group.name }}</li>
+    </ol>
+</nav>
+
+<h2>Group: {{ group.name }}</h2>
+
+<!-- Вкладки -->
+<ul class="nav nav-tabs" id="groupTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab" aria-controls="students" aria-selected="true">
+            Students ({{ students.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="materials-tab" data-bs-toggle="tab" data-bs-target="#materials" type="button" role="tab" aria-controls="materials" aria-selected="false">
+            Materials ({{ materials.count }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="subjects-tab" data-bs-toggle="tab" data-bs-target="#subjects" type="button" role="tab" aria-controls="subjects" aria-selected="false">
+            Subjects & Teachers
+        </button>
+    </li>
+</ul>
+
+<!-- Содержимое вкладок -->
+<div class="tab-content" id="groupTabsContent">
+    <!-- Вкладка студентов -->
+    <div class="tab-pane fade show active" id="students" role="tabpanel" aria-labelledby="students-tab">
+        <div class="p-3">
+            <h4>Students</h4>
+            {% if students %}
+                <div class="list-group">
+                    {% for student in students %}
+                        <a href="{% url 'tutor_student_grades' student.id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                {{ student.user.get_full_name }}
+                                <br>
+                                <small class="text-muted">{{ student.user.email }}</small>
+                            </div>
+                            <span class="badge bg-primary rounded-pill">
+                                {{ student.grade_set.count }} grades
+                            </span>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    There are no students in this group yet.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Вкладка материалов -->
+    <div class="tab-pane fade" id="materials" role="tabpanel" aria-labelledby="materials-tab">
+        <div class="p-3">
+            <h4>Uploaded Materials</h4>
+            {% if materials %}
+                <!-- Разделение материалов по семестрам -->
+                {% regroup materials by teacher_assignment.semester as semester_materials %}
+                {% for semester in semester_materials|dictsortreversed:"grouper.number" %}
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Semester {{ semester.grouper.number }} - {{ semester.grouper.name }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Subject</th>
+                                            <th>Teacher</th>
+                                            <th>Title</th>
+                                            <th>Upload Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for material in semester.list|dictsortreversed:"uploaded_at" %}
+                                        <tr>
+                                            <td>{{ material.teacher_assignment.subject.name }}</td>
+                                            <td>{{ material.teacher_assignment.teacher.get_full_name }}</td>
+                                            <td>{{ material.title }}</td>
+                                            <td>{{ material.uploaded_at|date:"d.m.Y H:i" }}</td>
+                                            <td>
+                                                <a href="{{ material.file.url }}" target="_blank" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-download me-1"></i> Download
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="alert alert-info">
+                        No materials have been uploaded for this group yet.
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">
+                    No materials have been uploaded for this group yet.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Вкладка предметов и преподавателей -->
+    <div class="tab-pane fade" id="subjects" role="tabpanel" aria-labelledby="subjects-tab">
+        <div class="p-3">
+            <h4>Subjects and Teachers</h4>
+            {% if subjects_by_semester %}
+                <!-- Группировка по семестрам -->
+                {% for semester, subjects in subjects_by_semester.items %}
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-calendar-alt me-2"></i>
+                                Semester {{ semester.number }}{% if semester.name %} - {{ semester.name }}{% endif %}
+                            </h5>
+                            <small class="opacity-75">
+                                {{ semester.start_date|date:"d.m.Y" }} - {{ semester.end_date|date:"d.m.Y" }}
+                            </small>
+                        </div>
+                        <div class="card-body">
+                            {% if subjects %}
+                                <div class="row">
+                                    {% for subject, teachers in subjects.items %}
+                                        <div class="col-md-6 col-lg-4 mb-3">
+                                            <div class="card border-light">
+                                                <div class="card-header bg-light">
+                                                    <strong>
+                                                        <i class="fas fa-book text-primary me-2"></i>
+                                                        {{ subject }}
+                                                    </strong>
+                                                </div>
+                                                <div class="card-body py-2">
+                                                    {% for teacher in teachers %}
+                                                        <div class="mb-1">
+                                                            <i class="fas fa-chalkboard-teacher text-secondary me-2"></i>
+                                                            <small>{{ teacher }}</small>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info mb-0">
+                                    No subjects assigned for this semester.
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-info">
+                    No subjects have been assigned to this group yet.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

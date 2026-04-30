@@ -1,0 +1,57 @@
+<!-- school/templates/upload_processing.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Обработка данных</title>
+    <meta charset="utf-8">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h2>Обработка данных студентов</h2>
+    
+    <div id="status" style="margin-bottom: 20px; padding: 15px; background-color: #fff3cd; border: 1px solid #ffeaa7;">
+        <strong>Статус:</strong> <span id="status-text">Начало обработки...</span>
+    </div>
+    
+    <div id="output-container" style="display: none; margin-bottom: 20px;">
+        <h3>Ход выполнения:</h3>
+        <pre id="output" style="background-color: #f8f9fa; padding: 15px; border: 1px solid #dee2e6; max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-family: monospace; font-size: 12px;"></pre>
+    </div>
+    
+    <div id="result-link" style="display: none;">
+        <a href="{% url 'import_result' %}?task_id={{ task_id }}" 
+           style="padding: 10px 20px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px;">
+            Просмотреть результаты
+        </a>
+    </div>
+
+    <script>
+        function checkStatus() {
+            $.get('{% url "check_import_status" %}?task_id={{ task_id }}', function(data) {
+                $('#status-text').text(data.status === 'processing' ? 'Обработка...' : 
+                                     data.status === 'completed' ? 'Завершено' : 
+                                     data.status === 'error' ? 'Ошибка' : 'Неизвестно');
+                
+                if (data.output) {
+                    $('#output-container').show();
+                    $('#output').text(data.output);
+                    // Прокручиваем вниз
+                    $('#output').scrollTop($('#output')[0].scrollHeight);
+                }
+                
+                if (data.status === 'processing') {
+                    setTimeout(checkStatus, 2000); // Проверяем каждые 2 секунды
+                } else if (data.status === 'completed' || data.status === 'error') {
+                    $('#result-link').show();
+                }
+            }).fail(function() {
+                $('#status-text').text('Ошибка соединения');
+                setTimeout(checkStatus, 5000); // Повторяем через 5 секунд при ошибке
+            });
+        }
+        
+        // Начинаем проверку статуса
+        checkStatus();
+    </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!-- templates/scheduler/schedule_confirm_delete.html -->
+{% extends 'scheduler/base.html' %}
+
+{% block title %}Delete Entry{% endblock %}
+
+{% block content %}
+<h2>Delete schedule entry?</h2>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">{{ entry.get_week_type_display }} week, {{ entry.get_weekday_display }}</h5>
+        <p class="card-text">
+            <strong>Time:</strong> {{ entry.start_time|time:"H:i" }}-{{ entry.end_time|time:"H:i" }}<br>
+            <strong>Group:</strong> {{ entry.group.name }}<br>
+            <strong>Teacher:</strong> {{ entry.teacher.get_full_name }}<br>
+            <strong>Subject:</strong> {{ entry.subject.name }}<br>
+            <strong>Room:</strong> {{ entry.room }}
+        </p>
+    </div>
+</div>
+
+<form method="post" class="mt-3">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Yes, delete</button>
+    <a href="{% url 'schedule_list' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

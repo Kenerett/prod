@@ -1,0 +1,173 @@
+<!-- school/templates/school/student_subject_detail.html -->
+{% extends 'school/base.html' %}
+
+{% block title %}Grades and Materials — {{ tsg.subject.name }}{% endblock %}
+
+{% block content %}
+
+<style>
+  @media (max-width: 768px) {
+    .table {
+      font-size: 0.85rem;
+    }
+    
+    .table th,
+    .table td {
+      padding: 0.5rem;
+    }
+    
+    .table-bordered th,
+    .table-bordered td {
+      border: 1px solid #dee2e6;
+    }
+    
+    h2 {
+      font-size: 1.25rem;
+    }
+    
+    h4 {
+      font-size: 1.1rem;
+    }
+    
+    .list-group-item {
+      padding: 0.75rem;
+    }
+    
+    .btn-sm {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .container-fluid {
+      padding: 1rem !important;
+    }
+    
+    .mb-4 {
+      margin-bottom: 1rem !important;
+    }
+    
+    .p-4 {
+      padding: 1rem !important;
+    }
+    
+    .table {
+      font-size: 0.75rem;
+    }
+    
+    .table th,
+    .table td {
+      padding: 0.4rem;
+    }
+    
+    h2 {
+      font-size: 1.1rem;
+    }
+    
+    h4 {
+      font-size: 1rem;
+    }
+    
+    .text-muted {
+      font-size: 0.9rem;
+    }
+  }
+</style>
+
+<!-- Header -->
+<div class="mb-4 p-4 bg-white rounded shadow-sm">
+  <h2 class="mb-1">{{ tsg.subject.name }}</h2>
+  <p class="text-muted mb-0">Group: <strong>{{ tsg.group.name }}</strong></p>
+</div>
+
+<!-- Grades -->
+<div class="mb-4 p-4 bg-white rounded shadow-sm">
+  <h4 class="mb-3">🎓 Grades</h4>
+  {% if grade %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover text-center align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Activity</th>
+            <th>SG Scores</th>
+            <th>SG Total</th>
+            <th>Midterm</th>
+            <th>Final</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{ grade.activity|default:"—" }}</td>
+            <td>
+              {% if grade.sg_scores %}
+                <ul class="list-unstyled mb-0">
+                   {% for sg_key, sg_value in grade.sg_scores.items %}
+                     <li>{{ sg_key }}: {{ sg_value }}</li>
+                   {% endfor %}
+                </ul>
+              {% else %}
+                —
+              {% endif %}
+            </td>
+            <td><strong>{{ grade.sg_total|default:"0" }}</strong></td>
+            <td>{{ grade.midterm|default:"—" }}</td>
+            <td>{{ grade.final|default:"—" }}</td>
+            <td><strong>{{ grade.total|default:"—" }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">Grades not yet available.</p>
+  {% endif %}
+</div>
+
+<!-- Attendance -->
+<div class="mb-4 p-4 bg-white rounded shadow-sm">
+  <h4 class="mb-3">📅 Attendance</h4>
+  {% if attendance %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-sm w-100 text-center align-middle">
+        <thead class="table-light">
+          <tr>
+            <th>Date</th>
+            <th>Lessons Missed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in attendance %}
+          <tr>
+            <td>{{ a.date }}</td>
+            <td>{{ a.missed_lessons }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">No attendance records found.</p>
+  {% endif %}
+</div>
+
+<!-- Materials -->
+<div class="mb-4 p-4 bg-white rounded shadow-sm">
+  <h4 class="mb-3">📎 Materials</h4>
+  {% if materials %}
+    <ul class="list-group">
+      {% for m in materials %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          {{ m.title }}
+          <a href="{{ m.file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">Download</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-muted">No materials uploaded.</p>
+  {% endif %}
+</div>
+
+<a href="{% url 'student_dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+
+{% endblock %}

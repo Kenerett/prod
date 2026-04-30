@@ -1,0 +1,12 @@
+<!-- templates/admin/grade_change_list.html -->
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    <li>
+        <a href="{% url 'admin:ImportExcelView' %}" class="addlink">
+            Import from Excel
+        </a>
+    </li>
+{% endblock %}

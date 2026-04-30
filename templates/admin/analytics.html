@@ -1,0 +1,120 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Аналитика посещений{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; Аналитика посещений
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 30px;">
+    <h1 style="padding: 15px; margin: 0; background: #f8f9fa; border-bottom: 1px solid #dee2e6;">
+        Аналитика посещений сайта
+    </h1>
+    <div style="padding: 20px;">
+        <!-- Общая статистика -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+            <div style="background: white; padding: 15px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; border: 1px solid #dee2e6;">
+                <h3 style="margin: 0 0 10px 0; color: #28a745;">Сегодня</h3>
+                <div style="font-size: 2em; font-weight: bold; color: #28a745;">
+                    {{ visits_today }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.8em;">посещений</div>
+            </div>
+            
+            <div style="background: white; padding: 15px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; border: 1px solid #dee2e6;">
+                <h3 style="margin: 0 0 10px 0; color: #17a2b8;">Неделя</h3>
+                <div style="font-size: 2em; font-weight: bold; color: #17a2b8;">
+                    {{ visits_week }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.8em;">посещений</div>
+            </div>
+            
+            <div style="background: white; padding: 15px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; border: 1px solid #dee2e6;">
+                <h3 style="margin: 0 0 10px 0; color: #ffc107;">Месяц</h3>
+                <div style="font-size: 2em; font-weight: bold; color: #ffc107;">
+                    {{ visits_month }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.8em;">посещений</div>
+            </div>
+            
+            <div style="background: white; padding: 15px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; border: 1px solid #dee2e6;">
+                <h3 style="margin: 0 0 10px 0; color: #007bff;">Пользователи онлайн</h3>
+                <div style="font-size: 2em; font-weight: bold; color: #007bff;">
+                    {{ current_users }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.8em;">за 5 минут</div>
+            </div>
+            
+            <div style="background: white; padding: 15px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; border: 1px solid #dee2e6;">
+                <h3 style="margin: 0 0 10px 0; color: #fd7e14;">Гости онлайн</h3>
+                <div style="font-size: 2em; font-weight: bold; color: #fd7e14;">
+                    {{ current_guests }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.8em;">за 5 минут</div>
+            </div>
+            
+            <div style="background: white; padding: 15px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; border: 1px solid #dee2e6;">
+                <h3 style="margin: 0 0 10px 0; color: #6c757d;">Всего</h3>
+                <div style="font-size: 2em; font-weight: bold; color: #6c757d;">
+                    {{ total_visits }}
+                </div>
+                <div style="color: #6c757d; font-size: 0.8em;">посещений</div>
+            </div>
+        </div>
+
+        <!-- Статистика по ролям -->
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 20px;">
+            <h2 style="padding: 15px; margin: 0; background: #e9ecef; border-bottom: 1px solid #dee2e6;">
+                Статистика по ролям - Сегодня
+            </h2>
+            <div style="padding: 15px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    {% for role, count in role_stats_today.items %}
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 3px; text-align: center;">
+                        <div style="font-weight: bold; color: #495057;">{{ role }}</div>
+                        <div style="font-size: 1.5em; color: #007bff;">{{ count }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 20px;">
+            <h2 style="padding: 15px; margin: 0; background: #e9ecef; border-bottom: 1px solid #dee2e6;">
+                Статистика по ролям - Неделя
+            </h2>
+            <div style="padding: 15px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    {% for role, count in role_stats_week.items %}
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 3px; text-align: center;">
+                        <div style="font-weight: bold; color: #495057;">{{ role }}</div>
+                        <div style="font-size: 1.5em; color: #17a2b8;">{{ count }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div style="background: white; border: 1px solid #dee2e6; border-radius: 5px;">
+            <h2 style="padding: 15px; margin: 0; background: #e9ecef; border-bottom: 1px solid #dee2e6;">
+                Статистика по ролям - Месяц
+            </h2>
+            <div style="padding: 15px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    {% for role, count in role_stats_month.items %}
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 3px; text-align: center;">
+                        <div style="font-weight: bold; color: #495057;">{{ role }}</div>
+                        <div style="font-size: 1.5em; color: #ffc107;">{{ count }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

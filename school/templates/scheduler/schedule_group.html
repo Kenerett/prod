@@ -1,0 +1,249 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th class="time-column">Time Slot</th>
+                <th class="day-header">Monday</th>
+                <th class="day-header">Tuesday</th>
+                <th class="day-header">Wednesday</th>
+                <th class="day-header">Thursday</th>
+                <th class="day-header">Friday</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for time_slot, time_label in time_slots %}
+                <tr>
+                    <td class="time-column">
+                        <div class="fw-bold">{{ time_label }}</div>
+                        <div class="small text-muted">Slot {{ time_slot }}</div>
+                    </td>
+                    {% for weekday in "01234" %}
+                        <td class="schedule-cell" data-week="{{ week_type }}" data-day="{{ weekday }}" data-time="{{ time_slot }}">
+                            <!-- Entries container -->
+                            <div class="entries-container" id="entries_{{ week_type }}_{{ weekday }}_{{ time_slot }}">
+                                <!-- ИСПРАВЛЕНО: Предзаполненные записи -->
+                                {% with key=week_type|add:"_"|add:weekday|add:"_"|add:time_slot|stringformat:"s" %}
+                                    {% if schedule_data|get_item:key %}
+                                        {% for entry_data in schedule_data|get_item:key %}
+                                            <div class="entry-section mb-2 p-2 border rounded bg-white">
+                                                <div class="mb-1">
+                                                    <label class="form-label small">Group</label>
+                                                    <select name="group_{{ week_type }}_{{ weekday }}_{{ time_slot }}_{{ forloop.counter }}" 
+                                                            class="form-select form-select-sm group-select">
+                                                        <option value="">-- Select Group --</option>
+                                                        {% for group in groups %}
+                                                            <option value="{{ group.id }}" {% if entry_data.group_id == group.id %}selected{% endif %}>{{ group.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="mb-1">
+                                                    <label class="form-label small">Subject</label>
+                                                    <select name="subject_{{ week_type }}_{{ weekday }}_{{ time_slot }}_{{ forloop.counter }}" 
+                                                            class="form-select form-select-sm subject-select">
+                                                        <option value="">-- Select Subject --</option>
+                                                        {% for subject in subjects %}
+                                                            <option value="{{ subject.id }}" {% if entry_data.subject_id == subject.id %}selected{% endif %}>{{ subject.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="mb-1">
+                                                    <label class="form-label small">Teacher</label>
+                                                    <select name="teacher_{{ week_type }}_{{ weekday }}_{{ time_slot }}_{{ forloop.counter }}" 
+                                                            class="form-select form-select-sm teacher-select">
+                                                        <option value="">-- Select Teacher --</option>
+                                                        {% for teacher in teachers %}
+                                                            <option value="{{ teacher.id }}" {% if entry_data.teacher_id == teacher.id %}selected{% endif %}>{{ teacher.get_full_name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="form-label small">Room</label>
+                                                    <select name="room_{{ week_type }}_{{ weekday }}_{{ time_slot }}_{{ forloop.counter }}" 
+                                                            class="form-select form-select-sm room-select">
+                                                        <option value="">-- Select Room --</option>
+                                                        {% for room in rooms %}
+                                                            <option value="{{ room.id }}" {% if entry_data.room_id == room.id %}selected{% endif %}>{{ room.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="mt-1">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeEntry(this)">
+                                                        <i class="bi bi-trash"></i> Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <!-- ИСПРАВЛЕНО: Если нет данных, показываем пустую запись -->
+                                        <div class="entry-section mb-2 p-2 border rounded bg-light">
+                                            <div class="mb-1">
+                                                <label class="form-label small">Group</label>
+                                                <select name="group_{{ week_type }}_{{ weekday }}_{{ time_slot }}_1" 
+                                                        class="form-select form-select-sm group-select">
+                                                    <option value="">-- Select Group --</option>
+                                                    {% for group in groups %}
+                                                        <option value="{{ group.id }}">{{ group.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="mb-1">
+                                                <label class="form-label small">Subject</label>
+                                                <select name="subject_{{ week_type }}_{{ weekday }}_{{ time_slot }}_1" 
+                                                        class="form-select form-select-sm subject-select">
+                                                    <option value="">-- Select Subject --</option>
+                                                    {% for subject in subjects %}
+                                                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="mb-1">
+                                                <label class="form-label small">Teacher</label>
+                                                <select name="teacher_{{ week_type }}_{{ weekday }}_{{ time_slot }}_1" 
+                                                        class="form-select form-select-sm teacher-select">
+                                                    <option value="">-- Select Teacher --</option>
+                                                    {% for teacher in teachers %}
+                                                        <option value="{{ teacher.id }}">{{ teacher.get_full_name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="form-label small">Room</label>
+                                                <select name="room_{{ week_type }}_{{ weekday }}_{{ time_slot }}_1" 
+                                                        class="form-select form-select-sm room-select">
+                                                    <option value="">-- Select Room --</option>
+                                                    {% for room in rooms %}
+                                                        <option value="{{ room.id }}">{{ room.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                            <!-- Add more entries button -->
+                            <button type="button" class="btn btn-sm btn-outline-primary add-entry-btn" 
+                                    onclick="addEntry(this, '{{ week_type }}', {{ weekday }}, {{ time_slot }})">
+                                <i class="bi bi-plus-circle"></i> Add Group
+                            </button>
+                        </td>
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+// Создаем глобальные переменные с данными
+const groupsOptions = `
+    <option value="">-- Select Group --</option>
+    {% for group in groups %}
+        <option value="{{ group.id }}">{{ group.name }}</option>
+    {% endfor %}
+`;
+
+const subjectsOptions = `
+    <option value="">-- Select Subject --</option>
+    {% for subject in subjects %}
+        <option value="{{ subject.id }}">{{ subject.name }}</option>
+    {% endfor %}
+`;
+
+const teachersOptions = `
+    <option value="">-- Select Teacher --</option>
+    {% for teacher in teachers %}
+        <option value="{{ teacher.id }}">{{ teacher.get_full_name }}</option>
+    {% endfor %}
+`;
+
+const roomsOptions = `
+    <option value="">-- Select Room --</option>
+    {% for room in rooms %}
+        <option value="{{ room.id }}">{{ room.name }}</option>
+    {% endfor %}
+`;
+
+let entryCounter = {};
+
+function addEntry(button, weekType, weekday, timeSlot) {
+    const container = button.previousElementSibling; // entries-container
+    
+    // ИСПРАВЛЕНО: Получаем правильное количество записей
+    const key = `${weekType}_${weekday}_${timeSlot}`;
+    if (!entryCounter[key]) {
+        // Считаем текущие записи в контейнере
+        entryCounter[key] = container.children.length;
+    }
+    entryCounter[key]++;
+    const entryNum = entryCounter[key];
+    
+    // Создаем новую запись
+    const entryHtml = `
+        <div class="entry-section mb-2 p-2 border rounded bg-white">
+            <div class="mb-1">
+                <label class="form-label small">Group</label>
+                <select name="group_${weekType}_${weekday}_${timeSlot}_${entryNum}" 
+                        class="form-select form-select-sm group-select">
+                    ${groupsOptions}
+                </select>
+            </div>
+            <div class="mb-1">
+                <label class="form-label small">Subject</label>
+                <select name="subject_${weekType}_${weekday}_${timeSlot}_${entryNum}" 
+                        class="form-select form-select-sm subject-select">
+                    ${subjectsOptions}
+                </select>
+            </div>
+            <div class="mb-1">
+                <label class="form-label small">Teacher</label>
+                <select name="teacher_${weekType}_${weekday}_${timeSlot}_${entryNum}" 
+                        class="form-select form-select-sm teacher-select">
+                    ${teachersOptions}
+                </select>
+            </div>
+            <div>
+                <label class="form-label small">Room</label>
+                <select name="room_${weekType}_${weekday}_${timeSlot}_${entryNum}" 
+                        class="form-select form-select-sm room-select">
+                    ${roomsOptions}
+                </select>
+            </div>
+            <div class="mt-1">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeEntry(this)">
+                    <i class="bi bi-trash"></i> Remove
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', entryHtml);
+    
+    // ИСПРАВЛЕНО: Обновляем индикатор заполненности
+    checkCellFilled(container.closest('.schedule-cell'));
+}
+
+function removeEntry(button) {
+    const entrySection = button.closest('.entry-section');
+    const cell = button.closest('.schedule-cell');
+    if (entrySection) {
+        entrySection.remove();
+        // ИСПРАВЛЕНО: Обновляем индикатор после удаления
+        checkCellFilled(cell);
+    }
+}
+
+// ИСПРАВЛЕНО: Правильная инициализация счетчиков
+document.addEventListener('DOMContentLoaded', function() {
+    entryCounter = {};
+    
+    // Инициализируем счетчики для каждой ячейки на основе существующих записей
+    {% for time_slot, time_label in time_slots %}
+        {% for weekday in "01234" %}
+            const container_{{ week_type }}_{{ weekday }}_{{ time_slot }} = document.getElementById('entries_{{ week_type }}_{{ weekday }}_{{ time_slot }}');
+            if (container_{{ week_type }}_{{ weekday }}_{{ time_slot }}) {
+                entryCounter['{{ week_type }}_{{ weekday }}_{{ time_slot }}'] = container_{{ week_type }}_{{ weekday }}_{{ time_slot }}.children.length;
+            }
+        {% endfor %}
+    {% endfor %}
+});
+</script>

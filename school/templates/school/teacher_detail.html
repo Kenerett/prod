@@ -1,0 +1,89 @@
+{% extends 'school/base.html' %}
+
+{% block title %}Teacher Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h2 class="card-title">👨‍🏫 {{ teacher.last_name }} {{ teacher.first_name }}</h2>
+      <p class="card-subtitle text-muted">Teacher Profile</p>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- Subjects -->
+    <div class="col-md-6">
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">📚 Subjects</h5>
+        </div>
+        <div class="card-body">
+          {% if subjects %}
+            <ul class="list-group list-group-flush">
+              {% for subject in subjects %}
+                <li class="list-group-item">{{ subject.name }}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted">No subjects</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Groups -->
+    <div class="col-md-6">
+      <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">🏫 Groups</h5>
+        </div>
+        <div class="card-body">
+          {% if groups %}
+            <ul class="list-group list-group-flush">
+              {% for group in groups %}
+                <li class="list-group-item">
+                  <a href="{% url 'group_detail' group.id %}">{{ group.name }}</a>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-muted">No groups</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assignments -->
+  <div class="card mb-4 shadow-sm">
+    <div class="card-header bg-info text-white">
+      <h5 class="mb-0">📝 Assignments</h5>
+    </div>
+    <div class="card-body">
+      {% if assignments %}
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Subject</th>
+              <th>Group</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for assignment in assignments %}
+            <tr>
+              <td>{{ assignment.subject.name }}</td>
+              <td>{{ assignment.group.name }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="text-muted">No assignments</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary mt-2">← Back to Admin Panel</a>
+</div>
+{% endblock %}

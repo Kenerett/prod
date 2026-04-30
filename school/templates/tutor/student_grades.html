@@ -1,0 +1,129 @@
+{% extends 'tutor/base.html' %}
+{% load custom_filters %}
+
+{% block title %}Grades and Attendance for {{ student.user.get_full_name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'tutor_dashboard' %}">My Groups</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'tutor_group_detail' student.groups.first.id %}">{{ student.groups.first.name }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ student.user.get_full_name }}</li>
+    </ol>
+</nav>
+
+<h2>Student Grades and Attendance: {{ student.user.get_full_name }}</h2>
+
+<!-- Grades -->
+<h4>Grades</h4>
+{% if grades %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Semester</th>
+                    <th>Subject</th>
+                    <th>Teacher</th>
+                    <th>Activity</th>
+                    <th>Midterm</th>
+                    <th>Final</th>
+                    <th>SG Points</th>
+                    <th>Total</th>
+                    <th>Missed Lessons</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% regroup grades by teacher_assignment.semester.number as semester_grades %}
+                {% for semester in semester_grades %}
+                    <tr class="table-info">
+                        <td colspan="9"><strong>Semester {{ semester.grouper }}</strong></td>
+                    </tr>
+                    {% for grade in semester.list %}
+                    <tr>
+                        <td></td>
+                        <td>{{ grade.teacher_assignment.subject.name }}</td>
+                        <td>{{ grade.teacher_assignment.teacher.get_full_name }}</td>
+                        <td>{{ grade.activity|default:'-' }}</td>
+                        <td>{{ grade.midterm|default:'-' }}</td>
+                        <td>{{ grade.final|default:'-' }}</td>
+                        <td>
+                            {% if grade.additional_scores %}
+                                {% for key, value in grade.additional_scores.items %}
+                                    {{ key }}: {{ value }}<br>
+                                {% endfor %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if grade.total is not None %}
+                                <strong>{{ grade.total }}</strong>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% with missed_count=attendance_summary|get_item:grade.teacher_assignment.id %}
+                                {% if missed_count %}
+                                    <span class="badge bg-danger">{{ missed_count }}</span>
+                                {% else %}
+                                    <span class="badge bg-success">0</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        The student has no grades yet.
+    </div>
+{% endif %}
+
+<!-- Attendance -->
+<h4>Attendance</h4>
+{% if attendance_records %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Semester</th>
+                    <th>Subject</th>
+                    <th>Teacher</th>
+                    <th>Date</th>
+                    <th>Missed Lessons</th>
+                    <th>Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% regroup attendance_records by teacher_assignment.semester.number as semester_attendance %}
+                {% for semester in semester_attendance %}
+                    <tr class="table-info">
+                        <td colspan="6"><strong>Semester {{ semester.grouper }}</strong></td>
+                    </tr>
+                    {% for attendance in semester.list %}
+                    <tr>
+                        <td></td>
+                        <td>{{ attendance.teacher_assignment.subject.name }}</td>
+                        <td>{{ attendance.teacher_assignment.teacher.get_full_name }}</td>
+                        <td>{{ attendance.date|date:"d.m.Y" }}</td>
+                        <td>{{ attendance.missed_lessons }}</td>
+                        <td>{{ attendance.reason|default:'-' }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        The student has no attendance records yet.
+    </div>
+{% endif %}
+
+<a href="{% url 'tutor_group_detail' student.groups.first.id %}" class="btn btn-secondary">Back</a>
+
+{% endblock %}

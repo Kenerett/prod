@@ -1,0 +1,892 @@
+<!-- templates/scheduler/schedule_group_enhanced.html -->
+{% extends 'scheduler/base.html' %}
+{% load dict_extras %}
+
+{% block title %}Schedule for {{ group.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --color-free: #d4edda;
+        --color-occupied: #f8d7da;
+        --color-conflict: #f5c2c7;
+        --color-selected: #cce5ff;
+        --border-free: #28a745;
+        --border-occupied: #dc3545;
+        --border-conflict: #e74c3c;
+        --border-selected: #007bff;
+    }
+
+    .schedule-container { max-width: 100%; overflow-x: auto; }
+    .schedule-table { font-size: 0.8rem; min-width: 1000px; }
+    
+    .time-slot-header, .day-header {
+        background: #495057 !important;
+        color: white;
+        text-align: center;
+        font-weight: bold;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .time-cell {
+        background: #f8f9fa !important;
+        font-weight: bold;
+        text-align: center;
+        vertical-align: middle;
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        border-right: 2px solid #dee2e6;
+        min-width: 100px;
+    }
+
+    .schedule-cell {
+        position: relative;
+        padding: 8px;
+        min-height: 120px;
+        vertical-align: top;
+        border: 2px solid #dee2e6;
+        background: var(--color-free);
+        transition: all 0.3s ease;
+        min-width: 180px;
+    }
+
+    .schedule-cell.occupied {
+        background: var(--color-occupied);
+        border-color: var(--border-occupied);
+    }
+
+    .schedule-cell.conflict {
+        background: var(--color-conflict);
+        border-color: var(--border-conflict);
+    }
+
+    .schedule-cell.selected {
+        background: var(--color-selected);
+        border-color: var(--border-selected);
+        box-shadow: 0 0 10px rgba(0, 123, 255, 0.3);
+    }
+
+    .form-select-xs {
+        font-size: 0.7rem !important;
+        padding: 0.1rem 0.25rem !important;
+        height: auto !important;
+        margin-bottom: 2px;
+    }
+
+    .room-status-indicator {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        z-index: 3;
+    }
+
+    .room-free { background: #28a745; }
+    .room-occupied { background: #dc3545; }
+    .room-conflict { background: #e74c3c; animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+
+    .conflict-info, .occupied-info {
+        position: absolute;
+        bottom: 2px;
+        font-size: 0.6rem;
+        padding: 1px 3px;
+        border-radius: 3px;
+        z-index: 4;
+        color: white;
+    }
+
+    .conflict-info {
+        right: 2px;
+        background: rgba(220, 53, 69, 0.9);
+    }
+
+    .occupied-info {
+        left: 2px;
+        background: rgba(108, 117, 125, 0.9);
+    }
+
+    .legend {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+    }
+
+    .legend-item {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 15px;
+        margin-bottom: 5px;
+        font-size: 0.85rem;
+    }
+
+    .legend-color {
+        width: 20px;
+        height: 15px;
+        margin-right: 5px;
+        border-radius: 3px;
+        border: 1px solid #ccc;
+    }
+
+    .week-tab {
+        background: #e9ecef;
+        border-radius: 10px 10px 0 0;
+        padding: 10px 20px;
+        margin-right: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .week-tab.active {
+        background: #007bff;
+        color: white;
+    }
+
+    .conflicts-panel {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 5px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .conflict-item {
+        padding: 5px;
+        margin: 5px 0;
+        background: rgba(220, 53, 69, 0.1);
+        border-radius: 3px;
+        border-left: 4px solid #dc3545;
+    }
+
+    .save-controls {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 100;
+        padding: 10px 0;
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header and Navigation -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Schedule for Group: {{ group.name }}</h2>
+        <div>
+            <a href="{% url 'scheduler_dashboard' %}" class="btn btn-secondary">Back</a>
+            <button class="btn btn-info" onclick="toggleConflictsPanel()">
+                <i class="bi bi-exclamation-triangle"></i> Conflicts (<span id="conflicts-count">0</span>)
+            </button>
+        </div>
+    </div>
+
+    <!-- Django Messages -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Form for submitting data -->
+    <form method="post" id="scheduleForm">
+        {% csrf_token %}
+
+        <!-- Control Panel -->
+        <div class="save-controls">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <button type="button" class="btn btn-warning me-2" onclick="clearAllFields()">
+                        <i class="bi bi-arrow-clockwise"></i> Clear All
+                    </button>
+                    <button type="button" class="btn btn-info me-2" onclick="validateSchedule()">
+                        <i class="bi bi-check-circle"></i> Check Conflicts
+                    </button>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-save"></i> Save Schedule
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="legend">
+            <h6 class="mb-2">Legend:</h6>
+            <div class="d-flex flex-wrap">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--color-free); border-color: var(--border-free);"></div>
+                    Room Available
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--color-occupied); border-color: var(--border-occupied);"></div>
+                    Room Occupied
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--color-conflict); border-color: var(--border-conflict);"></div>
+                    Schedule Conflict
+                </div>
+                <div class="legend-item">
+                    <div class="room-status-indicator room-free"></div>
+                    Available
+                </div>
+                <div class="legend-item">
+                    <div class="room-status-indicator room-occupied"></div>
+                    Occupied
+                </div>
+                <div class="legend-item">
+                    <div class="room-status-indicator room-conflict"></div>
+                    Conflict
+                </div>
+            </div>
+        </div>
+
+        <!-- Conflicts Panel -->
+        <div id="conflicts-panel" class="conflicts-panel" style="display: none;">
+            <h6><i class="bi bi-exclamation-triangle text-warning"></i> Conflicts Detected:</h6>
+            <div id="conflicts-list">
+                <!-- Filled by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Week Tabs -->
+        <div class="d-flex mb-3">
+            <div class="week-tab active" onclick="switchWeek('top')">
+                <i class="bi bi-arrow-up-circle"></i> Top Week
+            </div>
+            <div class="week-tab" onclick="switchWeek('bottom')">
+                <i class="bi bi-arrow-down-circle"></i> Bottom Week
+            </div>
+        </div>
+
+        <!-- Table for Top Week -->
+        <div id="top-week-container">
+            <div class="schedule-container">
+                <table class="table table-bordered schedule-table">
+                    <thead>
+                        <tr>
+                            <th class="time-slot-header">Time</th>
+                            {% for weekday_value, weekday_name in weekdays %}
+                                <th class="day-header">{{ weekday_name|slice:":3" }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for time_slot_value, time_slot_name in time_slots %}
+                        <tr>
+                            <td class="time-cell">{{ time_slot_name }}</td>
+                            {% for weekday_value, weekday_name in weekdays %}
+                            {% with key="top_"|add:weekday_value|stringformat:"d"|add:"_"|add:time_slot_value|stringformat:"d" %}
+                            <td class="schedule-cell" data-key="{{ key }}" data-week="top" data-day="{{ weekday_value }}" data-time="{{ time_slot_value }}">
+                                <div class="room-status-indicator room-free"></div>
+                                
+                                <!-- Teacher -->
+                                <select name="teacher_top_{{ weekday_value }}_{{ time_slot_value }}" 
+                                        class="form-select form-select-xs mb-1 teacher-select" 
+                                        data-type="teacher"
+                                        data-week="top" data-day="{{ weekday_value }}" data-time="{{ time_slot_value }}">
+                                    <option value="">-- Teacher --</option>
+                                    {% for teacher in teachers %}
+                                        <option value="{{ teacher.id }}" 
+                                            {% if schedule_data|lookup:key|lookup:"teacher_id" == teacher.id %}selected{% endif %}>
+                                            {{ teacher.get_full_name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Subject -->
+                                <select name="subject_top_{{ weekday_value }}_{{ time_slot_value }}" 
+                                        class="form-select form-select-xs mb-1 subject-select" 
+                                        data-type="subject">
+                                    <option value="">-- Subject --</option>
+                                    {% for subject in subjects %}
+                                        <option value="{{ subject.id }}"
+                                            {% if schedule_data|lookup:key|lookup:"subject_id" == subject.id %}selected{% endif %}>
+                                            {{ subject.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Room -->
+                                <select name="room_top_{{ weekday_value }}_{{ time_slot_value }}" 
+                                        class="form-select form-select-xs room-select" 
+                                        data-type="room"
+                                        data-week="top" data-day="{{ weekday_value }}" data-time="{{ time_slot_value }}">
+                                    <option value="">-- Room --</option>
+                                    {% for room in rooms %}
+                                        <option value="{{ room.id }}"
+                                            {% if schedule_data|lookup:key|lookup:"room_id" == room.id %}selected{% endif %}>
+                                            {{ room.number }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Information indicators (managed by JS) -->
+                                <div class="conflict-info" style="display: none;"></div>
+                                <div class="occupied-info" style="display: none;"></div>
+                            </td>
+                            {% endwith %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Table for Bottom Week -->
+        <div id="bottom-week-container" style="display: none;">
+            <div class="schedule-container">
+                <table class="table table-bordered schedule-table">
+                    <thead>
+                        <tr>
+                            <th class="time-slot-header">Time</th>
+                            {% for weekday_value, weekday_name in weekdays %}
+                                <th class="day-header">{{ weekday_name|slice:":3" }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for time_slot_value, time_slot_name in time_slots %}
+                        <tr>
+                            <td class="time-cell">{{ time_slot_name }}</td>
+                            {% for weekday_value, weekday_name in weekdays %}
+                            {% with key="bottom_"|add:weekday_value|stringformat:"d"|add:"_"|add:time_slot_value|stringformat:"d" %}
+                            <td class="schedule-cell" data-key="{{ key }}" data-week="bottom" data-day="{{ weekday_value }}" data-time="{{ time_slot_value }}">
+                                <div class="room-status-indicator room-free"></div>
+                                
+                                <!-- Teacher -->
+                                <select name="teacher_bottom_{{ weekday_value }}_{{ time_slot_value }}" 
+                                        class="form-select form-select-xs mb-1 teacher-select" 
+                                        data-type="teacher"
+                                        data-week="bottom" data-day="{{ weekday_value }}" data-time="{{ time_slot_value }}">
+                                    <option value="">-- Teacher --</option>
+                                    {% for teacher in teachers %}
+                                        <option value="{{ teacher.id }}"
+                                            {% if schedule_data|lookup:key|lookup:"teacher_id" == teacher.id %}selected{% endif %}>
+                                            {{ teacher.get_full_name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Subject -->
+                                <select name="subject_bottom_{{ weekday_value }}_{{ time_slot_value }}" 
+                                        class="form-select form-select-xs mb-1 subject-select" 
+                                        data-type="subject">
+                                    <option value="">-- Subject --</option>
+                                    {% for subject in subjects %}
+                                        <option value="{{ subject.id }}"
+                                            {% if schedule_data|lookup:key|lookup:"subject_id" == subject.id %}selected{% endif %}>
+                                            {{ subject.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Room -->
+                                <select name="room_bottom_{{ weekday_value }}_{{ time_slot_value }}" 
+                                        class="form-select form-select-xs room-select" 
+                                        data-type="room"
+                                        data-week="bottom" data-day="{{ weekday_value }}" data-time="{{ time_slot_value }}">
+                                    <option value="">-- Room --</option>
+                                    {% for room in rooms %}
+                                        <option value="{{ room.id }}"
+                                            {% if schedule_data|lookup:key|lookup:"room_id" == room.id %}selected{% endif %}>
+                                            {{ room.number }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Information indicators -->
+                                <div class="conflict-info" style="display: none;"></div>
+                                <div class="occupied-info" style="display: none;"></div>
+                            </td>
+                            {% endwith %}
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Control Buttons at Bottom -->
+        <div class="d-flex justify-content-between mt-3">
+            <div>
+                <button type="button" class="btn btn-outline-primary" onclick="copyWeek()">
+                    <i class="bi bi-copy"></i> Copy Week
+                </button>
+                <button type="button" class="btn btn-outline-info" onclick="showRoomAvailability()">
+                    <i class="bi bi-building"></i> Room Availability
+                </button>
+            </div>
+            <div>
+                <button type="submit" class="btn btn-success me-2">Save Schedule</button>
+                <a href="{% url 'scheduler_dashboard' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Statistics -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="bi bi-graph-up"></i> Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h5 class="text-success" id="free-slots">0</h5>
+                            <small>Available</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-danger" id="occupied-slots">0</h5>
+                            <small>Occupied</small>
+                        </div>
+                        <div class="col-4">
+                            <h5 class="text-info" id="filled-slots">0</h5>
+                            <small>Filled</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="bi bi-info-circle"></i> Information</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Group:</strong> {{ group.name }}</p>
+                    <p class="mb-1"><strong>Teachers:</strong> {{ teachers.count }}</p>
+                    <p class="mb-1"><strong>Subjects:</strong> {{ subjects.count }}</p>
+                    <p class="mb-0"><strong>Rooms:</strong> {{ rooms.count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Room Availability Modal -->
+<div class="modal fade" id="roomAvailabilityModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-building"></i> Room Availability</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="room-availability-content">
+                    <!-- Dynamically filled by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pass data to JavaScript -->
+<script id="schedule-data" type="application/json">
+{
+    "group_id": {{ group.id }},
+    "current_schedule": {{ schedule_data|safe }},
+    "occupied_rooms": {{ occupied_rooms_data|default:"{}"|safe }},
+    "occupied_teachers": {{ occupied_teachers_data|default:"{}"|safe }},
+    "room_names": {
+        {% for room in rooms %}
+            "{{ room.id }}": "{{ room.number }}"{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    },
+    "teacher_names": {
+        {% for teacher in teachers %}
+            "{{ teacher.id }}": "{{ teacher.get_full_name }}"{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    },
+    "time_slots": {
+        {% for time_slot_value, time_slot_name in time_slots %}
+            "{{ time_slot_value }}": "{{ time_slot_name }}"{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    },
+    "weekdays": {
+        {% for weekday_value, weekday_name in weekdays %}
+            "{{ weekday_value }}": "{{ weekday_name }}"{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    }
+}
+</script>
+
+<script>
+// Get data from Django
+const scheduleConfig = JSON.parse(document.getElementById('schedule-data').textContent);
+let currentWeek = 'top';
+let selectedCell = null;
+let conflicts = [];
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeSchedule();
+    attachEventListeners();
+    validateSchedule();
+    updateStatistics();
+});
+
+function initializeSchedule() {
+    // Initialize state of all cells
+    const cells = document.querySelectorAll('.schedule-cell');
+    cells.forEach(cell => {
+        updateCellStatus(cell);
+        
+        // Add handlers for selects
+        const selects = cell.querySelectorAll('select');
+        selects.forEach(select => {
+            select.addEventListener('change', function() {
+                onCellChange(cell);
+            });
+            select.addEventListener('focus', function() {
+                selectCell(cell);
+            });
+        });
+    });
+}
+
+function attachEventListeners() {
+    // Real-time validation handlers
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('.room-select, .teacher-select')) {
+            validateSchedule();
+            updateStatistics();
+        }
+    });
+
+    // Prevent form submission with conflicts
+    document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+        if (conflicts.length > 0) {
+            if (!confirm(`Found ${conflicts.length} conflicts. Continue saving?`)) {
+                e.preventDefault();
+                return false;
+            }
+        }
+    });
+}
+
+function switchWeek(weekType) {
+    currentWeek = weekType;
+    
+    // Update active tab
+    document.querySelectorAll('.week-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelector(`.week-tab[onclick="switchWeek('${weekType}')"]`).classList.add('active');
+    
+    // Show corresponding table
+    document.getElementById('top-week-container').style.display = weekType === 'top' ? 'block' : 'none';
+    document.getElementById('bottom-week-container').style.display = weekType === 'bottom' ? 'block' : 'none';
+    
+    // Update validation
+    validateSchedule();
+    updateStatistics();
+}
+
+function selectCell(cell) {
+    // Deselect previous cell
+    if (selectedCell) {
+        selectedCell.classList.remove('selected');
+    }
+    
+    // Select new cell
+    cell.classList.add('selected');
+    selectedCell = cell;
+}
+
+function onCellChange(cell) {
+    updateCellStatus(cell);
+    validateSchedule();
+    updateStatistics();
+}
+
+function updateCellStatus(cell) {
+    const week = cell.dataset.week;
+    const day = cell.dataset.day;
+    const time = cell.dataset.time;
+    
+    const teacher = cell.querySelector('.teacher-select')?.value;
+    const subject = cell.querySelector('.subject-select')?.value;
+    const room = cell.querySelector('.room-select')?.value;
+    
+    // Check conflicts
+    const hasRoomConflict = checkRoomConflict(week, day, time, room);
+    const hasTeacherConflict = checkTeacherConflict(week, day, time, teacher);
+    
+    // Update cell status
+    cell.classList.remove('occupied', 'conflict');
+    const indicator = cell.querySelector('.room-status-indicator');
+    const conflictInfo = cell.querySelector('.conflict-info');
+    const occupiedInfo = cell.querySelector('.occupied-info');
+    
+    if (hasRoomConflict || hasTeacherConflict) {
+        cell.classList.add('conflict');
+        indicator.className = 'room-status-indicator room-conflict';
+        
+        if (conflictInfo) {
+            conflictInfo.textContent = hasRoomConflict ? 'Room occupied' : 'Teacher busy';
+            conflictInfo.style.display = 'block';
+        }
+    } else if (isSlotOccupied(week, day, time, room)) {
+        cell.classList.add('occupied');
+        indicator.className = 'room-status-indicator room-occupied';
+        
+        if (occupiedInfo) {
+            occupiedInfo.textContent = getOccupiedBy(week, day, time);
+            occupiedInfo.style.display = 'block';
+        }
+    } else if (teacher || subject || room) {
+        indicator.className = 'room-status-indicator room-free';
+        if (conflictInfo) conflictInfo.style.display = 'none';
+        if (occupiedInfo) occupiedInfo.style.display = 'none';
+    } else {
+        indicator.className = 'room-status-indicator room-free';
+        if (conflictInfo) conflictInfo.style.display = 'none';
+        if (occupiedInfo) occupiedInfo.style.display = 'none';
+    }
+}
+
+function checkRoomConflict(week, day, time, room) {
+    if (!room) return false;
+    
+    const occupied = scheduleConfig.occupied_rooms[week]?.[day]?.[time];
+    return occupied && occupied.includes(room);
+}
+
+function checkTeacherConflict(week, day, time, teacher) {
+    if (!teacher) return false;
+    
+    const occupied = scheduleConfig.occupied_teachers[week]?.[day]?.[time];
+    return occupied && occupied.includes(teacher);
+}
+
+function isSlotOccupied(week, day, time, room) {
+    const roomOccupied = scheduleConfig.occupied_rooms[week]?.[day]?.[time];
+    return roomOccupied && roomOccupied.length > 0;
+}
+
+function getOccupiedBy(week, day, time) {
+    // Can add information about who occupies the slot
+    return 'Occupied';
+}
+
+function validateSchedule() {
+    conflicts = [];
+    const currentWeekCells = document.querySelectorAll(`.schedule-cell[data-week="${currentWeek}"]`);
+    
+    currentWeekCells.forEach(cell => {
+        const week = cell.dataset.week;
+        const day = cell.dataset.day;
+        const time = cell.dataset.time;
+        
+        const teacher = cell.querySelector('.teacher-select')?.value;
+        const room = cell.querySelector('.room-select')?.value;
+        
+        if (teacher || room) {
+            const timeSlot = scheduleConfig.time_slots[time];
+            const dayName = scheduleConfig.weekdays[day];
+            const weekName = week === 'top' ? 'Top' : 'Bottom';
+            
+            if (checkRoomConflict(week, day, time, room)) {
+                const roomName = scheduleConfig.room_names[room];
+                conflicts.push({
+                    type: 'room',
+                    message: `${weekName} week, ${dayName}, ${timeSlot}: Room ${roomName} already occupied`
+                });
+            }
+            
+            if (checkTeacherConflict(week, day, time, teacher)) {
+                const teacherName = scheduleConfig.teacher_names[teacher];
+                conflicts.push({
+                    type: 'teacher',
+                    message: `${weekName} week, ${dayName}, ${timeSlot}: ${teacherName} already busy`
+                });
+            }
+        }
+    });
+    
+    updateConflictsPanel();
+}
+
+function updateConflictsPanel() {
+    const conflictsCount = document.getElementById('conflicts-count');
+    const conflictsList = document.getElementById('conflicts-list');
+    
+    conflictsCount.textContent = conflicts.length;
+    
+    if (conflicts.length === 0) {
+        conflictsList.innerHTML = '<div class="text-success"><i class="bi bi-check-circle"></i> No conflicts detected</div>';
+    } else {
+        conflictsList.innerHTML = conflicts.map(conflict => 
+            `<div class="conflict-item">${conflict.message}</div>`
+        ).join('');
+    }
+}
+
+function updateStatistics() {
+    const allCells = document.querySelectorAll('.schedule-cell');
+    let freeSlots = 0;
+    let occupiedSlots = 0;
+    let filledSlots = 0;
+    
+    allCells.forEach(cell => {
+        const teacher = cell.querySelector('.teacher-select')?.value;
+        const subject = cell.querySelector('.subject-select')?.value;
+        const room = cell.querySelector('.room-select')?.value;
+        
+        if (teacher || subject || room) {
+            filledSlots++;
+        }
+        
+        if (cell.classList.contains('occupied') || cell.classList.contains('conflict')) {
+            occupiedSlots++;
+        } else {
+            freeSlots++;
+        }
+    });
+    
+    document.getElementById('free-slots').textContent = freeSlots;
+    document.getElementById('occupied-slots').textContent = occupiedSlots;
+    document.getElementById('filled-slots').textContent = filledSlots;
+}
+
+function toggleConflictsPanel() {
+    const panel = document.getElementById('conflicts-panel');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function clearAllFields() {
+    if (!confirm('Are you sure you want to clear all schedule fields?')) {
+        return;
+    }
+    
+    const selects = document.querySelectorAll('.schedule-cell select');
+    selects.forEach(select => {
+        select.value = '';
+        const cell = select.closest('.schedule-cell');
+        updateCellStatus(cell);
+    });
+    
+    validateSchedule();
+    updateStatistics();
+}
+
+function copyWeek() {
+    const sourceWeek = currentWeek;
+    const targetWeek = currentWeek === 'top' ? 'bottom' : 'top';
+    
+    if (!confirm(`Copy schedule from ${sourceWeek === 'top' ? 'top' : 'bottom'} week to ${targetWeek === 'top' ? 'top' : 'bottom'} week?`)) {
+        return;
+    }
+    
+    const sourceCells = document.querySelectorAll(`.schedule-cell[data-week="${sourceWeek}"]`);
+    
+    sourceCells.forEach(sourceCell => {
+        const day = sourceCell.dataset.day;
+        const time = sourceCell.dataset.time;
+        const targetCell = document.querySelector(`.schedule-cell[data-week="${targetWeek}"][data-day="${day}"][data-time="${time}"]`);
+        
+        if (targetCell) {
+            const teacher = sourceCell.querySelector('.teacher-select')?.value;
+            const subject = sourceCell.querySelector('.subject-select')?.value;
+            const room = sourceCell.querySelector('.room-select')?.value;
+            
+            if (targetCell.querySelector('.teacher-select')) {
+                targetCell.querySelector('.teacher-select').value = teacher || '';
+            }
+            if (targetCell.querySelector('.subject-select')) {
+                targetCell.querySelector('.subject-select').value = subject || '';
+            }
+            if (targetCell.querySelector('.room-select')) {
+                targetCell.querySelector('.room-select').value = room || '';
+            }
+            
+            updateCellStatus(targetCell);
+        }
+    });
+    
+    validateSchedule();
+    updateStatistics();
+    showNotification('Week copied!', 'info');
+}
+
+function showRoomAvailability() {
+    const modal = new bootstrap.Modal(document.getElementById('roomAvailabilityModal'));
+    const content = document.getElementById('room-availability-content');
+    
+    // Generate room availability table
+    let html = '<div class="table-responsive"><table class="table table-sm table-bordered">';
+    html += '<thead class="table-dark"><tr><th>Time</th>';
+    
+    Object.values(scheduleConfig.weekdays).forEach(dayName => {
+        html += `<th>${dayName}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    
+    Object.entries(scheduleConfig.time_slots).forEach(([timeValue, timeName]) => {
+        html += `<tr><td class="fw-bold">${timeName}</td>`;
+        
+        Object.keys(scheduleConfig.weekdays).forEach(dayValue => {
+            const occupiedRooms = scheduleConfig.occupied_rooms[currentWeek]?.[dayValue]?.[timeValue] || [];
+            
+            html += '<td>';
+            if (occupiedRooms.length > 0) {
+                html += occupiedRooms.map(room => {
+                    const roomName = scheduleConfig.room_names[room] || room;
+                    return `<span class="badge bg-danger me-1">${roomName}</span>`;
+                }).join('');
+            } else {
+                html += '<span class="text-success"><i class="bi bi-check-circle"></i> Available</span>';
+            }
+            html += '</td>';
+        });
+        
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table></div>';
+    content.innerHTML = html;
+    
+    modal.show();
+}
+
+function showNotification(message, type = 'info') {
+    // Create temporary notification
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 1060; min-width: 300px;';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    // Automatically remove after 3 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+        }
+    }, 3000);
+}
+</script>
+
+{% endblock %}

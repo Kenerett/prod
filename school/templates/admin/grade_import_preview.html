@@ -1,0 +1,147 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=app_label %}">{{ app_label|capfirst|escape }}</a>
+&rsaquo; <a href="{% url 'admin:school_grade_changelist' %}">Grades</a>
+&rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h1>{{ title }}</h1>
+    
+    <div class="module">
+        <div class="description">
+            <p><strong>Import Instructions:</strong></p>
+            <ul>
+                <li>Excel file should contain a table with student data</li>
+                <li>First column should contain full student names (Last Name First Name Middle Name)</li>
+                <li>Other columns should contain grades: midterm, activity, final, total, SG1, SG2, SG3, etc.</li>
+                <li>Column names should match grade types</li>
+                <li>Empty cells will be skipped</li>
+            </ul>
+            
+            <p><a href="{% url 'download_excel_template' %}" class="button">Download Excel Template</a></p>
+        </div>
+        
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <fieldset class="module aligned">
+                <div class="form-row">
+                    <div>
+                        <label for="{{ form.excel_file.id_for_label }}" class="required">{{ form.excel_file.label }}:</label>
+                        {{ form.excel_file }}
+                        {% if form.excel_file.help_text %}
+                            <p class="help">{{ form.excel_file.help_text }}</p>
+                        {% endif %}
+                        {% if form.excel_file.errors %}
+                            <ul class="errorlist">
+                                {% for error in form.excel_file.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div>
+                        <label for="{{ form.group_name.id_for_label }}" class="required">{{ form.group_name.label }}:</label>
+                        {{ form.group_name }}
+                        {% if form.group_name.help_text %}
+                            <p class="help">{{ form.group_name.help_text }}</p>
+                        {% endif %}
+                        {% if form.group_name.errors %}
+                            <ul class="errorlist">
+                                {% for error in form.group_name.errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div>
+                        <label for="{{ form.overwrite.id_for_label }}">{{ form.overwrite.label }}:</label>
+                        {{ form.overwrite }}
+                        {% if form.overwrite.help_text %}
+                            <p class="help">{{ form.overwrite.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div>
+                        <label for="{{ form.preview_only.id_for_label }}">{{ form.preview_only.label }}:</label>
+                        {{ form.preview_only }}
+                        {% if form.preview_only.help_text %}
+                            <p class="help">{{ form.preview_only.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </fieldset>
+            
+            <div class="submit-row">
+                <input type="submit" value="Upload File" class="default" />
+                <a href="{% url 'admin:school_grade_changelist' %}" class="button cancel-link">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.description {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.description ul {
+    margin-left: 20px;
+    margin-bottom: 10px;
+}
+
+.description li {
+    margin-bottom: 5px;
+}
+
+.button {
+    background: #417690;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 13px;
+    font-weight: normal;
+    line-height: normal;
+    margin: 0;
+    padding: 10px 15px;
+    text-align: center;
+    text-decoration: none;
+    vertical-align: middle;
+}
+
+.button:hover {
+    background: #205067;
+}
+
+.cancel-link {
+    background: #6c757d !important;
+    margin-left: 10px;
+}
+
+.cancel-link:hover {
+    background: #545b62 !important;
+}
+</style>
+{% endblock %}

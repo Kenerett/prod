@@ -103,9 +103,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "school_project.wsgi.application"
 
-# Database
-from decouple import config
-import dj_database_url
+# # Database
+# from decouple import config
+# import dj_database_url
 
 # DATABASES = {
 #     'default': dj_database_url.config(

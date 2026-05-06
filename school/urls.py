@@ -60,10 +60,6 @@ urlpatterns = [
     path('schedule/edit/', views.schedule_edit, name='schedule_edit'),
 
     path('admin-actions/', include(admin_patterns)),
-# urls.py (внутри urlpatterns)
-    # ... другие URL ...
-    # ... другие URL ...
-    path('schedule/create/', views.schedule_create, name='schedule_create'),
 
 
 
@@ -74,8 +70,8 @@ urlpatterns = [
     path('scheduler/schedule/create/', views.schedule_create, name='schedule_create'),
     path('scheduler/schedule/<int:entry_id>/update/', views.schedule_update, name='schedule_update'),
     path('scheduler/schedule/<int:entry_id>/delete/', views.schedule_delete, name='schedule_delete'),
-    path('scheduler/export/student/', views.export_schedule_student, name='export_schedule_student'),
-    path('scheduler/export/teacher/', views.export_schedule_teacher, name='export_schedule_teacher'),
+    path('scheduler/export/student/', views.export_schedule_student, name='scheduler_export_student'),
+    path('scheduler/export/teacher/', views.export_schedule_teacher, name='scheduler_export_teacher'),
     path('scheduler/schedule/group/<int:group_id>/', views.schedule_group, name='schedule_group'),
     path('export/student/', export_student_form, name='export_student_form'),
     path('export/teacher/', export_teacher_form, name='export_teacher_form'),

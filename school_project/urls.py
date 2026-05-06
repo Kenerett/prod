@@ -5,15 +5,15 @@ from django.conf.urls.static import static
 from django.shortcuts import render
 from school.models import RequestLog
 
+
 def analytics_view(request):
     if not request.user.is_staff:
         return admin.site.login(request)
-        
-    # Получаем статистику по ролям
+
     role_stats_today = RequestLog.get_detailed_role_stats('today')
     role_stats_week = RequestLog.get_detailed_role_stats('week')
     role_stats_month = RequestLog.get_detailed_role_stats('month')
-        
+
     context = {
         'visits_today': RequestLog.get_visits_today(),
         'visits_week': RequestLog.get_visits_this_week(),
@@ -27,17 +27,11 @@ def analytics_view(request):
     }
     return render(request, 'admin/analytics.html', context)
 
+
 urlpatterns = [
-    # URL для приложения evaluation - должно быть выше admin
     path('evaluation/', include('evaluation.urls')),
-    
-    # Аналитика админки
     path('suasdper-secrasdet-ad12min-pasdnel-7x9q2/analytics/', analytics_view, name='admin_analytics'),
-    
-    # Админка Django
     path('suasdper-secrasdet-ad12min-pasdnel-7x9q2/', admin.site.urls),
-    
-    # Основные URL приложения school
     path('', include('school.urls')),
-    
+    path('analytics/', include('apps.analytics.urls', namespace='analytics')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

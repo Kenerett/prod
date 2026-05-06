@@ -1,18 +1,15 @@
 from django import template
+from .filters import get_item  # noqa: F401 — canonical implementation
 
 register = template.Library()
 
-@register.filter
-def get_item(dictionary, key, default=None):
-    """Get item from dictionary with optional default value"""
-    if default is not None:
-        return dictionary.get(key, default)
-    return dictionary.get(key)
+# Re-export canonical get_item
+register.filter('get_item', get_item)
 
-# Или отдельный фильтр для значения по умолчанию
+
 @register.filter
 def get_item_default(dictionary, key_and_default):
-    """Get item from dictionary with default value: key:default"""
+    """Get item from dictionary with default value: {{ dict|get_item_default:"key:default" }}"""
     try:
         key, default = key_and_default.split(':', 1)
         return dictionary.get(key.strip(), default.strip())

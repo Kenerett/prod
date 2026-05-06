@@ -1,0 +1,432 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Импорт LMS Excel{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+/* ── Wizard steps ───────────────────────────────────────── */
+.lms-steps{display:flex;gap:0;margin:0 0 28px;border-radius:8px;overflow:hidden;border:1px solid #c8d0d8}
+.lms-step{flex:1;padding:12px 8px;text-align:center;font-size:13px;font-weight:600;background:#f4f6f8;color:#888;border-right:1px solid #c8d0d8;position:relative}
+.lms-step:last-child{border-right:none}
+.lms-step.active{background:#1a73e8;color:#fff}
+.lms-step.done{background:#e6f4ea;color:#137333}
+.lms-step .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.12);margin-right:6px;font-size:12px}
+.lms-step.active .num{background:rgba(255,255,255,.3)}
+.lms-step.done .num{background:#137333;color:#fff}
+
+/* ── Cards ──────────────────────────────────────────────── */
+.lms-card{background:#fff;border:1px solid #dadce0;border-radius:10px;padding:24px;margin-bottom:20px}
+.lms-card h2{margin:0 0 18px;font-size:17px;color:#202124;display:flex;align-items:center;gap:8px}
+.lms-card h2 .icon{font-size:20px}
+
+/* ── Form elements ──────────────────────────────────────── */
+.lms-field{margin-bottom:16px}
+.lms-field label{display:block;font-weight:600;margin-bottom:5px;color:#3c4043;font-size:13px}
+.lms-field .hint{font-size:11px;color:#80868b;margin-top:3px}
+.lms-file-drop{border:2px dashed #c8d0d8;border-radius:8px;padding:30px;text-align:center;cursor:pointer;transition:.2s;background:#fafafa}
+.lms-file-drop:hover{border-color:#1a73e8;background:#f0f6ff}
+.lms-file-drop input[type=file]{display:none}
+.lms-file-drop .drop-icon{font-size:36px;display:block;margin-bottom:8px}
+.lms-file-drop .drop-text{color:#5f6368;font-size:14px}
+.lms-file-drop .file-name{margin-top:8px;font-weight:600;color:#1a73e8;font-size:13px;display:none}
+
+.lms-check-row{display:flex;gap:20px;flex-wrap:wrap}
+.lms-check{display:flex;align-items:center;gap:8px;padding:10px 16px;border:1px solid #dadce0;border-radius:8px;cursor:pointer;transition:.2s;font-size:13px;user-select:none}
+.lms-check:hover{border-color:#1a73e8;background:#f0f6ff}
+.lms-check input{width:16px;height:16px;accent-color:#1a73e8}
+.lms-check.disabled{opacity:.5;cursor:default}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.lms-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 22px;border-radius:6px;border:none;cursor:pointer;font-size:14px;font-weight:600;text-decoration:none;transition:.15s}
+.lms-btn-primary{background:#1a73e8;color:#fff}
+.lms-btn-primary:hover{background:#1557b0;color:#fff}
+.lms-btn-success{background:#137333;color:#fff}
+.lms-btn-success:hover{background:#0d5729;color:#fff}
+.lms-btn-secondary{background:#f1f3f4;color:#3c4043;border:1px solid #dadce0}
+.lms-btn-secondary:hover{background:#e8eaed}
+
+/* ── Analysis panels ────────────────────────────────────── */
+.sheet-card{border:1px solid #dadce0;border-radius:8px;margin-bottom:16px;overflow:hidden}
+.sheet-header{padding:12px 16px;display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px;background:#f8f9fa;border-bottom:1px solid #dadce0}
+.sheet-body{padding:16px}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.badge-students{background:#e8f0fe;color:#1a73e8}
+.badge-grades{background:#fce8b2;color:#e37400}
+.badge-ok{background:#e6f4ea;color:#137333}
+.badge-warn{background:#fce8b2;color:#b06000}
+.badge-error{background:#fce8b2;color:#c5221f}
+
+/* ── Specialty detection ────────────────────────────────── */
+.specialty-box{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:13px}
+.specialty-box.found{background:#e6f4ea;border:1px solid #a8d5b5}
+.specialty-box.not-found{background:#fff3e0;border:1px solid #ffcc80}
+
+/* ── Semester map ───────────────────────────────────────── */
+.sem-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px;margin-top:8px}
+.sem-item{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;font-size:12px;background:#f8f9fa;border:1px solid #e8eaed}
+.sem-badge{min-width:56px;text-align:center;padding:2px 6px;border-radius:10px;font-weight:700;font-size:11px;flex-shrink:0}
+.sem-1,.sem-2{background:#e8f0fe;color:#1a73e8}
+.sem-3,.sem-4{background:#e6f4ea;color:#137333}
+.sem-5,.sem-6{background:#fff3e0;color:#e37400}
+.sem-7,.sem-8{background:#fce8b2;color:#b06000}
+.sem-none{background:#f1f3f4;color:#80868b}
+
+/* ── Preview table ──────────────────────────────────────── */
+.preview-wrap{overflow-x:auto;max-height:260px;margin-top:10px;border:1px solid #e8eaed;border-radius:6px}
+.preview-wrap table{border-collapse:collapse;font-size:11px;white-space:nowrap;width:100%}
+.preview-wrap th{background:#f1f3f4;padding:5px 10px;border:1px solid #e0e0e0;font-weight:600;position:sticky;top:0}
+.preview-wrap td{padding:4px 10px;border:1px solid #e8eaed}
+.preview-wrap tr:nth-child(even) td{background:#fafafa}
+
+/* ── Results ────────────────────────────────────────────── */
+.results-summary{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.result-stat{flex:1;min-width:120px;padding:16px;border-radius:8px;text-align:center}
+.result-stat .num{font-size:32px;font-weight:700;display:block}
+.result-stat .lbl{font-size:12px;margin-top:4px}
+.stat-created{background:#e6f4ea;color:#137333}
+.stat-updated{background:#e8f0fe;color:#1a73e8}
+.stat-errors{background:#fce8b2;color:#b06000}
+.result-table td,.result-table th{padding:8px 14px;border:1px solid #e0e0e0;font-size:13px}
+.result-table th{background:#f1f3f4;font-weight:600}
+.errors-list{font-size:11px;color:#c5221f;max-height:80px;overflow-y:auto}
+
+/* ── Select ─────────────────────────────────────────────── */
+.lms-select{padding:7px 10px;border:1px solid #dadce0;border-radius:6px;font-size:13px;min-width:200px;color:#3c4043}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:960px">
+
+{# ── Wizard progress bar ── #}
+<div class="lms-steps">
+  <div class="lms-step {% if step == 1 %}active{% elif step > 1 %}done{% endif %}">
+    <span class="num">{% if step > 1 %}✓{% else %}1{% endif %}</span>Загрузка файла
+  </div>
+  <div class="lms-step {% if step == 2 %}active{% elif step > 2 %}done{% endif %}">
+    <span class="num">{% if step > 2 %}✓{% else %}2{% endif %}</span>Анализ и предпросмотр
+  </div>
+  <div class="lms-step {% if step == 3 %}active{% endif %}">
+    <span class="num">3</span>Результат
+  </div>
+</div>
+
+{# ════════════════════════════════════════════════════════ #}
+{# STEP 1 — Upload                                          #}
+{# ════════════════════════════════════════════════════════ #}
+{% if step == 1 %}
+<div class="lms-card">
+  <h2><span class="icon">📂</span>Выберите файл Excel и настройки</h2>
+
+  <form method="post" enctype="multipart/form-data" id="uploadForm">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="analyse">
+
+    <div class="lms-field">
+      <label>Файл Excel (.xlsx)</label>
+      <div class="lms-file-drop" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <span class="drop-icon">📊</span>
+        <div class="drop-text">Нажмите или перетащите файл сюда</div>
+        <div class="file-name" id="fileName"></div>
+        <input type="file" name="excel_file" id="fileInput" accept=".xlsx,.xls" required
+               onchange="showFileName(this)">
+      </div>
+      <p class="hint">Файл должен содержать лист «Tələbə umumi məlumatlar» и/или листы с оценками групп</p>
+    </div>
+
+    <div class="lms-field">
+      <label>Что импортировать</label>
+      <div class="lms-check-row">
+        <label class="lms-check">
+          <input type="checkbox" name="import_students" value="1" checked>
+          👤 Данные студентов (лист 1)
+        </label>
+        <label class="lms-check">
+          <input type="checkbox" name="import_grades" value="1" checked>
+          📝 Оценки из LMS (листы групп)
+        </label>
+      </div>
+    </div>
+
+    <div class="lms-field" style="max-width:320px">
+      <label>Привязать к учебному семестру (необязательно)</label>
+      <select name="semester_id" class="lms-select">
+        <option value="">— не привязывать —</option>
+        {% for sem in semesters %}
+          <option value="{{ sem.id }}">Семестр {{ sem.number }}{% if sem.name %} — {{ sem.name }}{% endif %}</option>
+        {% endfor %}
+      </select>
+      <p class="hint">Семестр по куррикулуму определяется автоматически по предметам</p>
+    </div>
+
+    <div style="margin-top:24px">
+      <button type="submit" class="lms-btn lms-btn-primary" id="submitBtn">
+        Анализировать →
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="lms-card" style="background:#f8f9fa">
+  <h2><span class="icon">ℹ️</span>Как работает импорт</h2>
+  <ul style="font-size:13px;color:#3c4043;line-height:1.8;margin:0;padding-left:20px">
+    <li><strong>Лист 1</strong> («Tələbə umumi məlumatlar») — создаёт/обновляет пользователей и профили студентов</li>
+    <li><strong>Листы групп</strong> (e.g. «ZU 044») — импортирует оценки LMS по каждому предмету</li>
+    <li>Специальность и семестр по куррикулуму <strong>определяются автоматически</strong> по набору предметов в листе</li>
+    <li>Группа автоматически <strong>привязывается к специальности</strong></li>
+    <li>Существующие записи <strong>обновляются</strong>, новые — создаются</li>
+  </ul>
+</div>
+{% endif %}
+
+{# ════════════════════════════════════════════════════════ #}
+{# STEP 2 — Analysis / Preview                              #}
+{# ════════════════════════════════════════════════════════ #}
+{% if step == 2 %}
+<div class="lms-card">
+  <h2><span class="icon">🔍</span>Анализ файла — {{ orig_name }}</h2>
+  <p style="font-size:13px;color:#5f6368;margin:-8px 0 16px">
+    Найдено {{ analysis|length }} листа(ов) для импорта.
+    Проверьте данные ниже и нажмите «Начать импорт».
+  </p>
+
+  {% for entry in analysis %}
+  <div class="sheet-card">
+    <div class="sheet-header">
+      {% if entry.kind == 'students' %}
+        <span class="badge badge-students">Студенты</span>
+      {% else %}
+        <span class="badge badge-grades">Оценки</span>
+      {% endif %}
+      <span>Лист: <strong>{{ entry.sheet }}</strong></span>
+      <span style="margin-left:auto;font-size:12px;color:#80868b">
+        {{ entry.student_count }} строк студентов
+      </span>
+    </div>
+    <div class="sheet-body">
+
+      {% if entry.kind == 'grades' %}
+        {# Specialty detection #}
+        {% if entry.specialty %}
+          <div class="specialty-box found">
+            <span style="font-size:18px">🏫</span>
+            <div>
+              <strong>Специальность определена:</strong> {{ entry.specialty }}<br>
+              <span style="font-size:11px;color:#137333">
+                {{ entry.match_count }} из {{ entry.total_subjects }} предметов совпали с куррикулумом
+              </span>
+            </div>
+            {% if entry.match_count == entry.total_subjects %}
+              <span class="badge badge-ok" style="margin-left:auto">100% совпадение</span>
+            {% else %}
+              <span class="badge badge-warn" style="margin-left:auto">частичное</span>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="specialty-box not-found">
+            <span style="font-size:18px">⚠️</span>
+            <div>
+              <strong>Специальность не определена</strong> — куррикулум не загружен или предметы не совпадают.<br>
+              <span style="font-size:11px">Семестры будут пустыми. Загрузите куррикулум через команду import_curriculum.</span>
+            </div>
+          </div>
+        {% endif %}
+
+        {# Semester mapping #}
+        {% if entry.sem_map %}
+        <details {% if entry.sem_map|length <= 12 %}open{% endif %}>
+          <summary style="cursor:pointer;font-weight:600;font-size:13px;margin-bottom:8px;color:#3c4043">
+            📅 Семестры предметов ({{ entry.sem_map|length }})
+          </summary>
+          <div class="sem-grid">
+            {% for item in entry.sem_map %}
+            <div class="sem-item">
+              {% if item.sem %}
+                <span class="sem-badge sem-{{ item.sem }}">Сем {{ item.sem }}</span>
+              {% else %}
+                <span class="sem-badge sem-none">?</span>
+              {% endif %}
+              <span title="{{ item.code|default:'' }}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                {{ item.name }}
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+        </details>
+        {% endif %}
+      {% endif %}
+
+      {# Data preview table #}
+      <details style="margin-top:12px">
+        <summary style="cursor:pointer;font-weight:600;font-size:13px;color:#3c4043">
+          👁 Предпросмотр данных (первые 5 строк)
+        </summary>
+        <div class="preview-wrap">
+          <table>
+            <thead>
+              <tr>
+                {% for col in entry.cols %}
+                <th>{{ col }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in entry.rows %}
+              <tr>
+                {% for cell in row %}
+                <td>{{ cell }}</td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{# Confirm import form — no file re-upload! #}
+<form method="post">
+  {% csrf_token %}
+  <input type="hidden" name="action"      value="import">
+  <input type="hidden" name="tmp_path"    value="{{ tmp_path }}">
+  <input type="hidden" name="orig_name"   value="{{ orig_name }}">
+  <input type="hidden" name="semester_id" value="{{ semester_id }}">
+  <input type="hidden" name="do_students" value="{{ do_students|yesno:'1,0' }}">
+  <input type="hidden" name="do_grades"   value="{{ do_grades|yesno:'1,0' }}">
+
+  <div style="display:flex;gap:12px;align-items:center">
+    <button type="submit" class="lms-btn lms-btn-success">
+      ✔ Начать импорт
+    </button>
+    <a href="." class="lms-btn lms-btn-secondary">← Загрузить другой файл</a>
+    <span style="font-size:12px;color:#80868b">
+      Будет импортировано:
+      {% if do_students %}данные студентов{% endif %}
+      {% if do_students and do_grades %} + {% endif %}
+      {% if do_grades %}оценки{% endif %}
+    </span>
+  </div>
+</form>
+{% endif %}
+
+{# ════════════════════════════════════════════════════════ #}
+{# STEP 3 — Results                                         #}
+{# ════════════════════════════════════════════════════════ #}
+{% if step == 3 %}
+<div class="lms-card">
+  <h2><span class="icon">✅</span>Импорт завершён</h2>
+
+  <div class="results-summary">
+    <div class="result-stat stat-created">
+      <span class="num">{{ total_created }}</span>
+      <div class="lbl">Создано</div>
+    </div>
+    <div class="result-stat stat-updated">
+      <span class="num">{{ total_updated }}</span>
+      <div class="lbl">Обновлено</div>
+    </div>
+    <div class="result-stat stat-errors">
+      <span class="num">{{ total_errors }}</span>
+      <div class="lbl">Предупреждений</div>
+    </div>
+  </div>
+
+  <table class="result-table" style="width:100%;border-collapse:collapse;margin-bottom:20px">
+    <thead>
+      <tr>
+        <th>Лист</th>
+        <th>Тип</th>
+        <th style="text-align:center">Создано</th>
+        <th style="text-align:center">Обновлено</th>
+        <th style="text-align:center">Пропущено</th>
+        <th>Предупреждения</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in results %}
+      <tr>
+        <td><strong>{{ r.sheet }}</strong></td>
+        <td>
+          {% if r.kind == 'students' %}
+            <span class="badge badge-students">Студенты</span>
+          {% else %}
+            <span class="badge badge-grades">Оценки</span>
+          {% endif %}
+        </td>
+        <td style="text-align:center;color:#137333;font-weight:700">{{ r.created }}</td>
+        <td style="text-align:center;color:#1a73e8;font-weight:700">{{ r.updated }}</td>
+        <td style="text-align:center;color:#80868b">{{ r.skipped }}</td>
+        <td>
+          {% if r.errors %}
+            <details>
+              <summary style="cursor:pointer;color:#b06000;font-size:12px">
+                {{ r.errors|length }} предупрежд.
+              </summary>
+              <div class="errors-list">
+                {% for e in r.errors %}{{ e }}<br>{% endfor %}
+              </div>
+            </details>
+          {% else %}
+            <span style="color:#137333;font-size:12px">Нет</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div style="display:flex;gap:12px">
+    <a href="." class="lms-btn lms-btn-primary">📂 Импортировать ещё файл</a>
+    <a href="{% url 'admin:school_lmsgrade_changelist' %}" class="lms-btn lms-btn-secondary">
+      Просмотреть оценки LMS →
+    </a>
+  </div>
+</div>
+{% endif %}
+
+</div>
+
+<script>
+function showFileName(input) {
+  const nameEl = document.getElementById('fileName');
+  if (input.files && input.files[0]) {
+    nameEl.textContent = '📄 ' + input.files[0].name;
+    nameEl.style.display = 'block';
+  }
+}
+
+// Drag & drop support
+const zone = document.getElementById('dropZone');
+if (zone) {
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor='#1a73e8'; });
+  zone.addEventListener('dragleave', () => { zone.style.borderColor=''; });
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const input = document.getElementById('fileInput');
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      showFileName(input);
+    }
+  });
+}
+
+// Disable button on submit to prevent double-submit
+const form = document.getElementById('uploadForm');
+if (form) {
+  form.addEventListener('submit', () => {
+    const btn = document.getElementById('submitBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Анализ...'; }
+  });
+}
+</script>
+{% endblock %}

@@ -13,8 +13,11 @@ from django import views
 from django.utils import timezone
 
 from .models import (
-    CustomUser, StudentProfile, Subject, Group, 
-    TeacherAssignment, Grade, Attendance, GlobalGradeSettings, Material, TutorProfile, Room, ScheduleEntry, Semester
+    CustomUser, StudentProfile, Subject, Group,
+    TeacherAssignment, Grade, Attendance, GlobalGradeSettings, Material,
+    TutorProfile, Room, ScheduleEntry, Semester,
+    StudentExtendedInfo, LMSGrade, LMSImportLog,
+    Specialty, CurriculumEntry,
 )
 from .forms import CustomUserCreationForm, CustomUserChangeForm
 
@@ -33,6 +36,13 @@ class GradeAdmin(admin.ModelAdmin):
     def get_teacher(self, obj):
         return obj.teacher_assignment.teacher.get_full_name()
     get_teacher.short_description = 'Teacher'
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'teacher_assignment__subject',
+            'teacher_assignment__teacher',
+            'student__user',
+        )
 
     # --- Ограничения доступа ---
     def has_module_permission(self, request):
@@ -474,7 +484,7 @@ class StudentProfileAdmin(admin.ModelAdmin):
     list_display = ['user', 'get_group', 'get_all_groups']
     list_filter = ['groups']
     search_fields = ['user__username', 'user__first_name', 'user__last_name']
-    filter_horizontal = ('groups',) # Удобный виджет для ManyToMany
+    # filter_horizontal = ('groups',) # Удобный виджет для ManyToMany
 
     # --- Ограничения доступа ---
     def has_module_permission(self, request):
@@ -562,25 +572,36 @@ class StudentProfileAdmin(admin.ModelAdmin):
 
 
 
-class StudentProfileAdmin(admin.ModelAdmin):
-    list_display = ['user', 'get_group', 'get_all_groups']
-    list_filter = ['groups']
-    search_fields = ['user__username', 'user__first_name', 'user__last_name']
-
-
 class SubjectAdmin(admin.ModelAdmin):
-    list_display = ['name', 'description']
-    search_fields = ['name']
+    list_display = ['code', 'name', 'credits', 'description']
+    search_fields = ['name', 'code']
+    list_filter = []
+    ordering = ['name']
 
 
 class GroupAdmin(admin.ModelAdmin):
-    list_display = ['name', 'get_student_count']
+    list_display = ['name', 'specialty', 'get_student_count']
     search_fields = ['name']
+    list_filter = ['specialty']
     filter_horizontal = ['students']
 
+    def get_queryset(self, request):
+        from django.db.models import Count
+        qs = super().get_queryset(request).annotate(student_count=Count('students'))
+        if request.user.is_superuser:
+            return qs
+        if hasattr(request.user, 'role') and request.user.role == CustomUser.TUTOR:
+            try:
+                tutor_profile = request.user.tutor_profile
+                return tutor_profile.groups.annotate(student_count=Count('students'))
+            except TutorProfile.DoesNotExist:
+                return qs.none()
+        return qs.none()
+
     def get_student_count(self, obj):
-        return obj.students.count()
+        return obj.student_count
     get_student_count.short_description = 'Number of Students'
+    get_student_count.admin_order_field = 'student_count'
 
     # --- Ограничения доступа ---
     def has_module_permission(self, request):
@@ -641,26 +662,6 @@ class GroupAdmin(admin.ModelAdmin):
             return False
         return False
 
-    # Опционально: ограничить список отображаемых групп для тьютора
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        if hasattr(request.user, 'role') and request.user.role == CustomUser.TUTOR:
-            try:
-                tutor_profile = request.user.tutor_profile
-                # Показываем только группы тьютора
-                return tutor_profile.groups.all()
-            except TutorProfile.DoesNotExist:
-                return qs.none() # Если профиля нет, показываем пустой список
-        return qs.none()
-
-
-
-
-    def get_student_count(self, obj):
-        return obj.students.count()
-    get_student_count.short_description = 'Number of Students'
 
 
 class TeacherAssignmentAdmin(admin.ModelAdmin):
@@ -700,6 +701,9 @@ class TutorProfileAdmin(admin.ModelAdmin):
     def get_groups(self, obj):
         return ", ".join([group.name for group in obj.groups.all()])
     get_groups.short_description = 'Groups'
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('groups').select_related('user')
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "user":
@@ -903,11 +907,439 @@ admin.site.register(CustomUser, CustomUserAdmin)
 admin.site.register(StudentProfile, StudentProfileAdmin)
 admin.site.register(Subject, SubjectAdmin)
 admin.site.register(Group, GroupAdmin)
+
+
+# ── Specialty & Curriculum ────────────────────────────────────────────────────
+
+class CurriculumEntryInline(admin.TabularInline):
+    model = CurriculumEntry
+    extra = 0
+    fields = ['semester_number', 'subject_code', 'subject_name', 'ects',
+              'hours_per_week', 'prerequisite_codes', 'subject']
+    ordering = ['semester_number', 'subject_code']
+
+
+@admin.register(Specialty)
+class SpecialtyAdmin(admin.ModelAdmin):
+    list_display  = ['code', 'name', 'get_group_count', 'get_entry_count']
+    search_fields = ['code', 'name']
+    inlines       = [CurriculumEntryInline]
+
+    def get_group_count(self, obj):
+        return obj.groups.count()
+    get_group_count.short_description = 'Групп'
+
+    def get_entry_count(self, obj):
+        return obj.curriculum_entries.count()
+    get_entry_count.short_description = 'Предметов в куррикулуме'
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['show_curriculum_import_btn'] = True
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom = [
+            path(
+                'import-curriculum/',
+                self.admin_site.admin_view(self.import_curriculum_view),
+                name='specialty_import_curriculum',
+            ),
+            path(
+                '<int:pk>/link-subjects/',
+                self.admin_site.admin_view(self.link_subjects_view),
+                name='specialty_link_subjects',
+            ),
+        ]
+        return custom + urls
+
+    def import_curriculum_view(self, request):
+        import os, tempfile
+        from django.shortcuts import render, redirect
+        from django.contrib import messages as msg
+        from school.management.commands.import_curriculum import parse_curriculum_file
+        from school.models import Specialty as Spec, CurriculumEntry as CE
+        from school.services.curriculum import link_curriculum_subjects
+
+        context = {
+            'title': 'Импорт куррикулума из .docx / .pdf',
+            'opts': self.model._meta,
+            'has_permission': True,
+            'specialties': Spec.objects.order_by('name'),
+        }
+
+        if request.method == 'POST':
+            action      = request.POST.get('action', 'import')
+            cur_file    = request.FILES.get('cur_file')
+            spec_code   = request.POST.get('specialty_code', '').strip()
+            spec_name   = request.POST.get('specialty_name', '').strip()
+            do_clear    = request.POST.get('clear_existing') == '1'
+            do_link     = request.POST.get('link_subjects') == '1'
+
+            if not cur_file:
+                msg.error(request, 'Файл не выбран.')
+                return render(request, 'admin/curriculum_import.html', context)
+
+            orig_name = cur_file.name.lower()
+            if not (orig_name.endswith('.docx') or orig_name.endswith('.pdf')):
+                msg.error(request, 'Поддерживаются только файлы .docx и .pdf')
+                return render(request, 'admin/curriculum_import.html', context)
+
+            suffix = '.pdf' if orig_name.endswith('.pdf') else '.docx'
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+            try:
+                for chunk in cur_file.chunks():
+                    tmp.write(chunk)
+                tmp_path = tmp.name
+            finally:
+                tmp.close()
+
+            try:
+                rows = parse_curriculum_file(tmp_path)
+            except Exception as e:
+                msg.error(request, f'Ошибка чтения файла: {e}')
+                return render(request, 'admin/curriculum_import.html', context)
+            finally:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+
+            # ── Preview only — DO NOT save to DB ─────────────────────────────
+            if action == 'preview':
+                by_sem = {}
+                for r in rows:
+                    by_sem.setdefault(r['semester'], []).append(r)
+                context.update({
+                    'preview_rows': rows,
+                    'preview_by_sem': dict(sorted(by_sem.items())),
+                    'preview_file':   cur_file.name,
+                    'spec_code':      spec_code,
+                    'spec_name':      spec_name,
+                })
+                return render(request, 'admin/curriculum_import.html', context)
+
+            # ── Full import ───────────────────────────────────────────────────
+            if not spec_code or not spec_name:
+                msg.error(request, 'Укажите код и название специальности.')
+                return render(request, 'admin/curriculum_import.html', context)
+
+            specialty, created = Spec.objects.get_or_create(
+                code=spec_code,
+                defaults={'name': spec_name},
+            )
+            if specialty.name != spec_name:
+                specialty.name = spec_name
+                specialty.save(update_fields=['name'])
+
+            if do_clear:
+                deleted, _ = CE.objects.filter(specialty=specialty).delete()
+                msg.info(request, f'Удалено {deleted} старых записей куррикулума.')
+
+            created_cnt = updated_cnt = 0
+            for row in rows:
+                if not row['name']:
+                    continue
+                code = row['code'] or f"__AUTO_{row['name'][:10].replace(' ', '_').upper()}"
+                _, was_created = CE.objects.update_or_create(
+                    specialty=specialty,
+                    subject_code=code,
+                    defaults={
+                        'semester_number':    row['semester'],
+                        'subject_name':       row['name'],
+                        'ects':               row['ects'],
+                        'hours_per_week':     row['hours'],
+                        'prerequisite_codes': row['prerequisites'],
+                    },
+                )
+                if was_created:
+                    created_cnt += 1
+                else:
+                    updated_cnt += 1
+
+            if do_link:
+                linked = link_curriculum_subjects(specialty=specialty)
+                msg.success(request, f'Привязано {linked} предметов (Subject).')
+
+            msg.success(
+                request,
+                f'Куррикулум «{specialty}» импортирован: '
+                f'{created_cnt} создано, {updated_cnt} обновлено. '
+                f'Всего предметов: {CE.objects.filter(specialty=specialty).count()}.'
+            )
+            return redirect('admin:school_specialty_changelist')
+
+        return render(request, 'admin/curriculum_import.html', context)
+
+    def link_subjects_view(self, request, pk):
+        from school.services.curriculum import link_curriculum_subjects
+        from school.models import Specialty as Spec
+        from django.contrib import messages as msg
+        from django.shortcuts import redirect
+        specialty = Spec.objects.get(pk=pk)
+        updated = link_curriculum_subjects(specialty=specialty)
+        msg.success(request, f'Привязано {updated} предметов к объектам Subject.')
+        return redirect('admin:school_specialty_change', pk)
+
+
+@admin.register(CurriculumEntry)
+class CurriculumEntryAdmin(admin.ModelAdmin):
+    list_display  = ['specialty', 'semester_number', 'subject_code',
+                     'subject_name', 'ects', 'prerequisite_codes', 'subject']
+    list_filter   = ['specialty', 'semester_number']
+    search_fields = ['subject_code', 'subject_name']
+    ordering      = ['specialty', 'semester_number', 'subject_code']
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related('specialty', 'subject')
 admin.site.register(TeacherAssignment, TeacherAssignmentAdmin)
 admin.site.register(Attendance, AttendanceAdmin)
 admin.site.register(Material, MaterialAdmin)
 admin.site.register(TutorProfile, TutorProfileAdmin)
 admin.site.register(Room, RoomAdmin)
+
+
+# ── LMS Import ────────────────────────────────────────────────────────────────
+
+class StudentExtendedInfoInline(admin.StackedInline):
+    model = StudentExtendedInfo
+    can_delete = False
+    extra = 0
+    fieldsets = (
+        ('Identity', {'fields': ('fin_code', 'id_card_series', 'id_card_number', 'student_card_number')}),
+        ('Academic', {'fields': ('faculty', 'specialty_code', 'specialty_name', 'education_form',
+                                  'education_level', 'study_year', 'admission_year', 'admission_score',
+                                  'status', 'gets_scholarship')}),
+        ('Personal', {'fields': ('date_of_birth', 'gender', 'citizenship', 'birth_city', 'address', 'phone')}),
+    )
+
+
+@admin.register(StudentExtendedInfo)
+class StudentExtendedInfoAdmin(admin.ModelAdmin):
+    list_display  = ['student', 'fin_code', 'faculty', 'study_year', 'admission_year', 'gets_scholarship']
+    search_fields = ['student__user__first_name', 'student__user__last_name', 'fin_code']
+    list_filter   = ['faculty', 'study_year', 'gets_scholarship']
+
+
+@admin.register(LMSGrade)
+class LMSGradeAdmin(admin.ModelAdmin):
+    list_display  = ['student', 'subject_name', 'group', 'curriculum_semester',
+                     'semester', 'total_score', 'credits', 'import_source']
+    list_filter   = ['group', 'curriculum_semester', 'semester', 'import_source']
+    search_fields = ['student__user__first_name', 'student__user__last_name', 'subject_name']
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related(
+            'student__user', 'group', 'semester', 'subject',
+        )
+
+
+@admin.register(LMSImportLog)
+class LMSImportLogAdmin(admin.ModelAdmin):
+    list_display  = ['filename', 'sheet_name', 'imported_at', 'imported_by',
+                     'rows_processed', 'rows_created', 'rows_updated', 'rows_skipped']
+    list_filter   = ['sheet_name']
+    readonly_fields = [f.name for f in LMSImportLog._meta.get_fields()
+                       if hasattr(f, 'name') and f.name != 'id']
+
+    def has_add_permission(self, request):
+        return False
+
+    def get_urls(self):
+        from django.urls import path
+        urls = super().get_urls()
+        custom = [
+            path('import-lms/', self.admin_site.admin_view(self.import_lms_view), name='lms_import'),
+        ]
+        return custom + urls
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['import_url'] = 'admin:lms_import'
+        extra_context['show_import_button'] = True
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def import_lms_view(self, request):
+        import os, tempfile, json
+        from django.contrib import messages as msg
+        from school.lms_import import parse_excel, import_sheet1, import_grade_sheet
+        from school.services.curriculum import detect_specialty, find_curriculum_entry
+
+        semesters = Semester.objects.order_by('number')
+        specialties = Specialty.objects.order_by('name')
+        context = {
+            'title': 'Импорт данных из Excel (LMS)',
+            'semesters':   semesters,
+            'specialties': specialties,
+            'opts': self.model._meta,
+            'has_permission': True,
+            'step': 1,
+        }
+
+        action = request.POST.get('action', '')
+
+        # ── STEP 1 → 2: upload & analyse ─────────────────────────────────────
+        if request.method == 'POST' and action == 'analyse':
+            if 'excel_file' not in request.FILES:
+                msg.error(request, 'Файл не выбран.')
+                return render(request, 'admin/lms_import.html', context)
+
+            excel_file  = request.FILES['excel_file']
+            semester_id = request.POST.get('semester_id') or ''
+            do_students = request.POST.get('import_students') == '1'
+            do_grades   = request.POST.get('import_grades') == '1'
+
+            # Save to temp file — reused in step 3, no re-upload needed
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx',
+                                              dir=tempfile.gettempdir())
+            try:
+                for chunk in excel_file.chunks():
+                    tmp.write(chunk)
+                tmp_path = tmp.name
+            finally:
+                tmp.close()
+
+            try:
+                sheets = parse_excel(tmp_path)
+            except Exception as e:
+                os.unlink(tmp_path)
+                msg.error(request, f'Не удалось прочитать файл: {e}')
+                return render(request, 'admin/lms_import.html', context)
+
+            analysis = []
+            for sheet_name, kind, df in sheets:
+                if kind == 'students' and not do_students:
+                    continue
+                if kind == 'grades' and not do_grades:
+                    continue
+
+                entry = {'sheet': sheet_name, 'kind': kind, 'cols': [], 'rows': [],
+                         'specialty': None, 'match_count': 0, 'total_subjects': 0,
+                         'sem_map': [], 'student_count': 0}
+
+                if kind == 'students':
+                    entry['cols'] = list(df.columns)
+                    entry['rows'] = [list(r) for _, r in df.head(5).iterrows()]
+                    entry['student_count'] = len(df)
+                else:
+                    header = list(df.iloc[0])
+                    subject_names = []
+                    for i in range(2, len(header)):
+                        n = str(header[i]).strip() if header[i] and str(header[i]).strip() else ''
+                        if n and n.lower() not in ('gpa', 'total', ''):
+                            subject_names.append(n)
+
+                    sp, cnt = detect_specialty(subject_names)
+                    entry['specialty']      = str(sp) if sp else None
+                    entry['match_count']    = cnt
+                    entry['total_subjects'] = len(subject_names)
+
+                    sem_map = []
+                    for sn in subject_names:
+                        ce = find_curriculum_entry(sn, specialty=sp)
+                        sem_map.append({
+                            'name': sn,
+                            'sem':  ce.semester_number if ce else None,
+                            'code': ce.subject_code if ce else None,
+                        })
+                    entry['sem_map'] = sem_map
+
+                    entry['cols'] = header
+                    entry['rows'] = [list(df.iloc[i]) for i in range(2, min(7, df.shape[0]))]
+                    entry['student_count'] = df.shape[0] - 2
+
+                analysis.append(entry)
+
+            context.update({
+                'step':        2,
+                'analysis':    analysis,
+                'tmp_path':    tmp_path,
+                'orig_name':   excel_file.name,
+                'semester_id': semester_id,
+                'do_students': do_students,
+                'do_grades':   do_grades,
+            })
+            return render(request, 'admin/lms_import.html', context)
+
+        # ── STEP 2 → 3: confirm & import ─────────────────────────────────────
+        if request.method == 'POST' and action == 'import':
+            tmp_path    = request.POST.get('tmp_path', '')
+            orig_name   = request.POST.get('orig_name', 'unknown.xlsx')
+            semester_id = request.POST.get('semester_id') or None
+            do_students = request.POST.get('do_students') == '1'
+            do_grades   = request.POST.get('do_grades') == '1'
+
+            if not tmp_path or not os.path.exists(tmp_path):
+                msg.error(request, 'Временный файл не найден. Пожалуйста, начните заново.')
+                return render(request, 'admin/lms_import.html', context)
+
+            semester = None
+            if semester_id:
+                try:
+                    semester = Semester.objects.get(pk=semester_id)
+                except Semester.DoesNotExist:
+                    pass
+
+            try:
+                sheets = parse_excel(tmp_path)
+            except Exception as e:
+                msg.error(request, f'Ошибка чтения файла: {e}')
+                return render(request, 'admin/lms_import.html', context)
+            finally:
+                try:
+                    os.unlink(tmp_path)
+                except OSError:
+                    pass
+
+            results = []
+            total_created = total_updated = total_errors = 0
+            for sheet_name, kind, df in sheets:
+                if kind == 'students' and not do_students:
+                    continue
+                if kind == 'grades' and not do_grades:
+                    continue
+
+                if kind == 'students':
+                    stats = import_sheet1(df, semester=semester)
+                else:
+                    stats = import_grade_sheet(df, sheet_name=sheet_name, semester=semester)
+
+                LMSImportLog.objects.create(
+                    imported_by=request.user,
+                    filename=orig_name,
+                    sheet_name=sheet_name,
+                    rows_processed=stats['created'] + stats['updated'] + stats['skipped'],
+                    rows_created=stats['created'],
+                    rows_updated=stats['updated'],
+                    rows_skipped=stats['skipped'],
+                    errors='\n'.join(stats['errors']) if stats['errors'] else '',
+                )
+                results.append({
+                    'sheet':   sheet_name,
+                    'kind':    kind,
+                    'created': stats['created'],
+                    'updated': stats['updated'],
+                    'skipped': stats['skipped'],
+                    'errors':  stats['errors'],
+                })
+                total_created += stats['created']
+                total_updated += stats['updated']
+                total_errors  += len(stats['errors'])
+
+            context.update({
+                'step':          3,
+                'results':       results,
+                'total_created': total_created,
+                'total_updated': total_updated,
+                'total_errors':  total_errors,
+            })
+            return render(request, 'admin/lms_import.html', context)
+
+        return render(request, 'admin/lms_import.html', context)
+
+
 admin.site.site_header = 'School Management System'
-admin.site.site_title = 'Admin Panel'
+admin.site.site_title  = 'Admin Panel'
 admin.site.index_title = 'Welcome to School Management System'

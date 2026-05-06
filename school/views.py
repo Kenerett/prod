@@ -52,6 +52,10 @@ from .utils.word_scanner import WordSubjectScanner # Убедитесь, что 
 logger = logging.getLogger(__name__)
 
 
+def is_tutor(user):
+    return user.is_authenticated and hasattr(user, 'role') and user.role == CustomUser.TUTOR
+
+
 WEEKDAYS = [
     (1, 'Понедельник'),
     (2, 'Вторник'),

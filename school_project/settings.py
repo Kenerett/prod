@@ -17,7 +17,7 @@ SECRET_KEY = env('SECRET_KEY')
 
 DEBUG = env.bool('DEBUG', False)
 
-ALLOWED_HOSTS = ['mbaasoiu.online', 'www.mbaasoiu.online', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['mbaasoiu.online', 'www.mbaasoiu.online', 'localhost', '127.0.0.1','prod-production-5d68.up.railway.app']
 
 CSRF_TRUSTED_ORIGINS = [
     'https://mbaasoiu.online',
@@ -25,7 +25,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000',
     'http://localhost:8000',
     'https://prod-production-b21c.up.railway.app',
-    'https://prod-production-85fc.up.railway.app'
+    'https://prod-production-5d68.up.railway.app',
+    
 ]
 
 # Custom User Model
